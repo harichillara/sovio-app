@@ -1,0 +1,17 @@
+import React from 'react';
+import { View, Text } from 'react-native';
+import { useTheme } from '@sovio/tokens/ThemeContext';
+import type { TokenMeterProps } from './types';
+
+export function TokenMeter({ used, total }: TokenMeterProps) {
+  const { theme } = useTheme();
+  const pct = Math.max(0, Math.min(100, (used / total) * 100));
+  return (
+    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: theme.muted }}>AI</Text>
+      <View style={{ width: 72, height: 8, borderRadius: 999, backgroundColor: theme.border, overflow: 'hidden' }}>
+        <View style={{ width: `${pct}%` as any, height: '100%', backgroundColor: theme.accent, borderRadius: 999 }} />
+      </View>
+    </View>
+  );
+}

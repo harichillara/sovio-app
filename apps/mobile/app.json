@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Sovio",
+    "slug": "sovio",
+    "version": "1.0.0",
+    "scheme": "sovio",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#F7F8FC"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.sovio.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F8FC"
+      },
+      "package": "app.sovio.mobile"
+    },
+    "plugins": ["expo-router"]
+  }
+}

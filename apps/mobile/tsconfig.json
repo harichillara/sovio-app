@@ -1,0 +1,24 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@sovio/tokens": [
+        "../../packages/tokens/src/index.ts"
+      ],
+      "@sovio/tokens/*": [
+        "../../packages/tokens/src/*"
+      ],
+      "@sovio/core": [
+        "../../packages/core/src/index.ts"
+      ],
+      "@sovio/ui": [
+        "../../packages/ui/src/index.tsx"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
+}

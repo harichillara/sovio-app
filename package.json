@@ -1,0 +1,13 @@
+{
+  "name": "sovio",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @sovio/mobile dev",
+    "dev:web": "pnpm --filter @sovio/web dev",
+    "build": "pnpm --filter @sovio/web build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
