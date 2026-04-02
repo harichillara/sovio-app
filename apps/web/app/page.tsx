@@ -22,7 +22,10 @@ export default function Page() {
           <div className="hero-copy">
             <p className="hero-copy__eyebrow">2040 social operating system</p>
             <h1 className="hero-copy__title">
-              The app that feels one step ahead of your life.
+              <span>The app that</span>
+              <span>feels one step</span>
+              <span>ahead of your</span>
+              <span>life.</span>
             </h1>
             <p className="hero-copy__summary">
               Sovio is an anticipatory layer over your real world. It predicts

@@ -9,6 +9,12 @@ interface HeroSceneProps {
 export function HeroScene({ signals }: HeroSceneProps) {
   return (
     <div className="hero-scene">
+      <div className="hero-scene__label">
+        <span className="hero-scene__label-kicker">Intent field</span>
+        <span className="hero-scene__label-note">Live social patterning</span>
+      </div>
+      <div className="hero-scene__axis hero-scene__axis--x" />
+      <div className="hero-scene__axis hero-scene__axis--y" />
       <motion.div
         className="hero-scene__core"
         initial={{ opacity: 0, scale: 0.92 }}

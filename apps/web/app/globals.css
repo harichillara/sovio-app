@@ -265,18 +265,34 @@ input {
 
 .hero-copy__title {
   margin: 0;
-  max-width: 11.5ch;
-  font-size: clamp(3.2rem, 7vw, 6.3rem);
-  line-height: 0.94;
-  letter-spacing: -0.06em;
+  max-width: none;
+  font-size: clamp(3rem, 6.4vw, 5.8rem);
+  line-height: 0.92;
+  letter-spacing: -0.065em;
+}
+
+.hero-copy__title span {
+  display: block;
+}
+
+.hero-copy__title span:nth-child(2) {
+  margin-left: 0.08em;
+}
+
+.hero-copy__title span:nth-child(3) {
+  margin-left: 0.34em;
+}
+
+.hero-copy__title span:nth-child(4) {
+  margin-left: 0.02em;
 }
 
 .hero-copy__summary {
   margin: 18px 0 0;
-  max-width: 34rem;
+  max-width: 32rem;
   color: rgba(240, 255, 208, 0.84);
-  font-size: 1.1rem;
-  line-height: 1.7;
+  font-size: 1.02rem;
+  line-height: 1.62;
 }
 
 .hero-copy__actions {
@@ -289,24 +305,74 @@ input {
 .hero-copy__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 14px;
   margin-top: 16px;
   color: var(--sovio-muted);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
 }
 
 .hero-scene {
   position: relative;
-  min-height: 26rem;
+  min-height: 27rem;
+}
+
+.hero-scene__label {
+  position: absolute;
+  top: 0;
+  left: 10%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(9, 12, 6, 0.55);
+  border: 1px solid rgba(189, 255, 46, 0.12);
+  color: rgba(240, 255, 208, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.hero-scene__label-kicker {
+  color: var(--sovio-accent);
+  font-family: var(--font-sovio-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hero-scene__label-note {
+  font-size: 0.84rem;
+}
+
+.hero-scene__axis {
+  position: absolute;
+  z-index: 0;
+  opacity: 0.28;
+}
+
+.hero-scene__axis--x {
+  top: 50%;
+  left: 10%;
+  right: 2%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(189, 255, 46, 0.18), transparent);
+}
+
+.hero-scene__axis--y {
+  top: 8%;
+  bottom: 8%;
+  left: 54%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(189, 255, 46, 0.14), transparent);
 }
 
 .hero-scene__core {
   position: absolute;
-  inset: 16% 12% 12% 12%;
+  inset: 14% 8% 10% 18%;
   border-radius: 999px;
   background:
-    radial-gradient(circle at center, rgba(189, 255, 46, 0.18) 0%, transparent 52%),
-    radial-gradient(circle at center, rgba(11, 16, 8, 0.98) 0%, rgba(8, 12, 5, 0.94) 58%, transparent 100%);
+    radial-gradient(circle at 42% 50%, rgba(189, 255, 46, 0.22) 0%, transparent 48%),
+    radial-gradient(circle at 50% 50%, rgba(11, 16, 8, 0.98) 0%, rgba(8, 12, 5, 0.94) 58%, transparent 100%);
   border: 1px solid rgba(189, 255, 46, 0.18);
   box-shadow: inset 0 0 120px rgba(189, 255, 46, 0.08);
 }
@@ -375,28 +441,23 @@ input {
 }
 
 .hero-scene__signal--1 {
-  top: 9%;
-  right: 0;
+  top: 12%;
+  right: -2%;
 }
 
 .hero-scene__signal--2 {
-  top: 28%;
-  left: -2%;
+  top: 32%;
+  left: 0;
 }
 
 .hero-scene__signal--3 {
-  right: 6%;
-  bottom: 30%;
+  right: 4%;
+  bottom: 28%;
 }
 
 .hero-scene__signal--4 {
-  left: 8%;
-  bottom: 18%;
-}
-
-.hero-scene__signal--5 {
-  right: 22%;
-  bottom: 4%;
+  left: 14%;
+  bottom: 8%;
 }
 
 .hero-scene__signal-dot {
@@ -980,6 +1041,12 @@ input {
     min-height: 24rem;
   }
 
+  .hero-copy__title span:nth-child(2),
+  .hero-copy__title span:nth-child(3),
+  .hero-copy__title span:nth-child(4) {
+    margin-left: 0;
+  }
+
   .hero-scene__signal {
     position: static;
     margin-top: 10px;
@@ -987,6 +1054,11 @@ input {
 
   .hero-scene__core {
     inset: 10% 4% 40% 4%;
+  }
+
+  .hero-scene__label,
+  .hero-scene__axis {
+    display: none;
   }
 
   .waitlist-form__row {

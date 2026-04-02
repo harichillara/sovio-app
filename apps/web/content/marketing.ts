@@ -18,11 +18,10 @@ export const heroCtas: HeroCTA[] = [
 ];
 
 export const heroSignals = [
-  'Thursday pattern detected',
-  '2 mutuals free nearby',
-  'Low-friction night out',
-  'Presence dip for 3 days',
-  'Replay worth converting',
+  'Thursday night pattern detected',
+  '2 close friends trending free',
+  'Low-friction plan forming',
+  'Replay candidate worth converting',
 ];
 
 export const loopSteps = [
