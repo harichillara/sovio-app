@@ -1,105 +1,115 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import {
   TabScreen,
-  HeroActionCard,
-  MiniActionCard,
-  TokenMeter,
+  SuggestionDeck,
+  QuotaMeter,
+  PresenceScoreRing,
   UpgradeBanner,
-  EmptyState,
+  QueueToast,
 } from '@sovio/ui';
 import {
-  useSuggestedPlans,
-  useAITokens,
+  useSuggestions,
+  useAcceptSuggestion,
+  useDismissSuggestion,
+  useEntitlement,
+  useIsPro,
+  usePresenceScore,
+  useTrackEvent,
   useAuthStore,
-  useAIStore,
-  useMessagesStore,
+  useSuggestionsStore,
+  eventsService,
 } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeTab() {
   const { theme } = useTheme();
-  const tier = useAuthStore((s) => s.profile?.subscription_tier ?? 'free');
-  const tokensUsed = useAIStore((s) => s.tokensUsed);
-  const tokensLimit = useAIStore((s) => s.tokensLimit);
-  const unreadCount = useMessagesStore((s) => s.unreadCount);
 
-  const { data: suggested, isLoading } = useSuggestedPlans();
-  useAITokens(); // triggers store update
+  // Data
+  const { data: suggestions = [], isLoading } = useSuggestions();
+  const { data: entitlement } = useEntitlement();
+  const { data: presenceDay } = usePresenceScore();
+  const isPro = useIsPro();
+  const userId = useAuthStore((s) => s.user?.id);
 
-  const firstPlan = suggested?.[0];
+  // Mutations
+  const acceptMut = useAcceptSuggestion();
+  const dismissMut = useDismissSuggestion();
+  const trackEvent = useTrackEvent();
+  const removeSuggestion = useSuggestionsStore((s) => s.removeSuggestion);
+
+  // Handlers
+  const handleAccept = (id: string) => {
+    const suggestion = suggestions.find((s) => s.id === id);
+    acceptMut.mutate(id, {
+      onSuccess: () => {
+        removeSuggestion(id);
+        if (suggestion?.type === 'plan') {
+          router.push('/(modals)/create-plan');
+        }
+      },
+    });
+  };
+
+  const handleDismiss = (id: string) => {
+    dismissMut.mutate({ suggestionId: id });
+    removeSuggestion(id);
+  };
+
+  // Quota values
+  const quotaUsed = entitlement?.used ?? 0;
+  const quotaLimit = entitlement?.limit ?? 50;
 
   return (
     <TabScreen
       title="Home"
       subtitle="Tonight looks easy"
       headerRight={
-        <TokenMeter
-          used={tokensUsed}
-          total={tokensLimit === Infinity ? 1000 : tokensLimit}
-        />
+        <View style={styles.headerRight}>
+          <Pressable onPress={() => router.push('/(modals)/presence-score')}>
+            <PresenceScoreRing
+              score={presenceDay?.score ?? 0}
+              size={42}
+            />
+          </Pressable>
+          <QuotaMeter used={quotaUsed} limit={quotaLimit} label="AI" />
+        </View>
       }
     >
-      {firstPlan ? (
-        <HeroActionCard
-          eyebrow="READY NOW"
-          title={firstPlan.title}
-          body={firstPlan.description ?? 'A plan is ready for you. Low effort. Easy yes.'}
-          primaryLabel="Do it"
-          secondaryLabel="Not now"
-          onPrimary={() => router.push({ pathname: '/(modals)/plan-detail', params: { planId: firstPlan.id } })}
-        />
-      ) : (
-        <EmptyState
-          icon="sparkles-outline"
-          title="No suggestions yet"
-          body="Create your first plan or check back later for AI-powered suggestions."
-          actionLabel="Create a plan"
-          onAction={() => router.push('/(modals)/create-plan')}
-        />
-      )}
-
-      <MiniActionCard
-        title="Messages"
-        body={unreadCount > 0 ? `${unreadCount} unread conversation${unreadCount > 1 ? 's' : ''}` : 'No new messages'}
-        label="Open messages"
-        onPress={() => router.push('/(tabs)/messages')}
+      {/* Intent Cloud: suggestion deck */}
+      <SuggestionDeck
+        suggestions={suggestions.map((s) => ({
+          id: s.id,
+          title: s.title,
+          summary: s.summary,
+          type: s.type,
+        }))}
+        onAccept={handleAccept}
+        onDismiss={handleDismiss}
       />
 
-      <MiniActionCard
-        title="Try a nearby spot"
-        body="A simple option close to you might be open tonight."
-        label="See option"
-        onPress={() => router.push('/(tabs)/momentum')}
-      />
-
-      {tier === 'free' ? (
+      {/* Upgrade banner for free users */}
+      {!isPro && (
         <UpgradeBanner
           title="Need more AI help?"
           body="Sovio Pro unlocks more suggestions, faster drafts, and priority plan generation."
           onPress={() => router.push('/(modals)/subscription')}
         />
-      ) : null}
+      )}
+
+      {/* AI generating toast */}
+      <QueueToast
+        visible={acceptMut.isPending || dismissMut.isPending}
+        isPro={isPro}
+      />
 
       {/* FAB for creating a plan */}
-      <View style={{ position: 'absolute', bottom: 20, right: 0 }}>
+      <View style={styles.fabContainer}>
         <Pressable
           onPress={() => router.push('/(modals)/create-plan')}
-          style={{
-            backgroundColor: theme.accent,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 6,
-          }}
+          style={[styles.fab, { backgroundColor: theme.accent }]}
         >
           <Ionicons name="add" size={28} color={theme.background} />
         </Pressable>
@@ -107,3 +117,28 @@ export default function HomeTab() {
     </TabScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 20,
+    right: 0,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+});

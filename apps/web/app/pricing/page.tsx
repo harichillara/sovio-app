@@ -1,46 +1,45 @@
+import { PricingTier } from '../../components/marketing/PricingTier';
+import { SectionShell } from '../../components/marketing/SectionShell';
+import { SignalBackground } from '../../components/marketing/SignalBackground';
+import { WaitlistForm } from '../../components/marketing/WaitlistForm';
+import { pricingTiers } from '../../content/marketing';
+
 export default function PricingPage() {
   return (
-    <main style={{ maxWidth: 920, margin: '0 auto', padding: '0 32px' }}>
-      <section style={{ textAlign: 'center', padding: '48px 0 32px' }}>
-        <h1 style={{ fontSize: 44, margin: '0 0 12px', color: 'var(--sovio-text)' }}>Simple pricing</h1>
-        <p style={{ fontSize: 18, color: 'var(--sovio-muted)', margin: 0 }}>
-          Start free. Upgrade when you want more.
+    <>
+      <section className="hero-section" style={{ minHeight: 'auto' }}>
+        <SignalBackground />
+        <div className="site-frame split-hero">
+          <div className="split-hero__copy">
+            <p className="hero-copy__eyebrow">Pricing</p>
+            <h1 className="split-hero__title">
+              Two layers. One anticipatory system.
+            </h1>
+            <p className="split-hero__summary">
+              Sovio starts with a strong assistive shell, then opens into a
+              deeper momentum layer when you want more generation, more replay,
+              and a sharper planning engine.
+            </p>
+          </div>
+          <WaitlistForm source="pricing-hero" compact />
+        </div>
+      </section>
+
+      <SectionShell
+        eyebrow="Plans"
+        title="Choose the level of momentum you want Sovio to carry for you."
+        summary="The free layer lets you feel the system. Pro is where the predictive, replay, and planning stack starts to compound."
+      >
+        <div className="pricing-grid">
+          <PricingTier tier={pricingTiers[0]} />
+          <PricingTier tier={pricingTiers[1]} emphasized />
+        </div>
+        <p className="pricing-note">
+          Pricing is designed around AI intensity, replay depth, and priority
+          handling, not around bloating the product with more tabs or feed
+          mechanics.
         </p>
-      </section>
-
-      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 48 }}>
-        <div style={{ background: 'var(--sovio-surface)', borderRadius: 24, padding: 32 }}>
-          <p style={{ color: 'var(--sovio-accent)', fontWeight: 800, fontSize: 13, marginBottom: 4 }}>FREE</p>
-          <h2 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 4px', color: 'var(--sovio-text)' }}>$0</h2>
-          <p style={{ color: 'var(--sovio-muted)', fontSize: 14, margin: '0 0 24px' }}>Forever free</p>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {['AI plan suggestions', 'Basic coordination', '100 AI tokens/month', 'Replay last 7 days', '5 active plans'].map((f) => (
-              <li key={f} style={{ fontSize: 14, color: 'var(--sovio-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: 'var(--sovio-success)', fontWeight: 800 }}>&#10003;</span> {f}
-              </li>
-            ))}
-          </ul>
-          <a href="#" style={{ display: 'block', textAlign: 'center', marginTop: 28, background: 'var(--sovio-surfaceAlt)', color: 'var(--sovio-text)', padding: '14px 0', borderRadius: 18, fontWeight: 800, textDecoration: 'none', fontSize: 15 }}>
-            Get started
-          </a>
-        </div>
-
-        <div style={{ background: 'var(--sovio-accent)', borderRadius: 24, padding: 32 }}>
-          <p style={{ color: 'var(--sovio-background)', fontWeight: 800, fontSize: 13, marginBottom: 4 }}>SOVIO PRO</p>
-          <h2 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 4px', color: 'var(--sovio-background)' }}>$6.99<span style={{ fontSize: 16, fontWeight: 600 }}>/mo</span></h2>
-          <p style={{ color: 'var(--sovio-surfaceAlt)', fontSize: 14, margin: '0 0 24px' }}>Do more. Think less.</p>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {['Unlimited AI tokens', 'Priority plan generation', 'AI-drafted replies', 'Full Replay history', 'Unlimited active plans', 'Auto-reply in safe contexts', 'Deeper momentum insights'].map((f) => (
-              <li key={f} style={{ fontSize: 14, color: 'var(--sovio-surfaceAlt)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: 'var(--sovio-background)', fontWeight: 800 }}>&#10003;</span> {f}
-              </li>
-            ))}
-          </ul>
-          <a href="#" style={{ display: 'block', textAlign: 'center', marginTop: 28, background: 'var(--sovio-background)', color: 'var(--sovio-accent)', padding: '14px 0', borderRadius: 18, fontWeight: 800, textDecoration: 'none', fontSize: 15 }}>
-            Upgrade to Pro
-          </a>
-        </div>
-      </section>
-    </main>
+      </SectionShell>
+    </>
   );
 }

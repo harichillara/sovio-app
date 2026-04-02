@@ -1,15 +1,31 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Pressable } from 'react-native';
+import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 
-const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+const TAB_ICONS: Record<
+  string,
+  { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
+> = {
   home: { active: 'home', inactive: 'home-outline' },
   momentum: { active: 'flash', inactive: 'flash-outline' },
   messages: { active: 'chatbubble', inactive: 'chatbubble-outline' },
   replay: { active: 'refresh', inactive: 'refresh-outline' },
-  profile: { active: 'person', inactive: 'person-outline' },
 };
+
+function SettingsHeaderButton() {
+  const { theme } = useTheme();
+  return (
+    <Pressable
+      onPress={() => router.push('/settings')}
+      style={{ paddingRight: 16 }}
+      hitSlop={12}
+    >
+      <Ionicons name="settings-outline" size={22} color={theme.muted} />
+    </Pressable>
+  );
+}
 
 export default function TabsLayout() {
   const { theme } = useTheme();
@@ -29,15 +45,21 @@ export default function TabsLayout() {
         },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = TAB_ICONS[route.name] || TAB_ICONS.home;
-          return <Ionicons name={focused ? icons.active : icons.inactive} size={size} color={color} />;
+          return (
+            <Ionicons
+              name={focused ? icons.active : icons.inactive}
+              size={size}
+              color={color}
+            />
+          );
         },
+        headerRight: () => <SettingsHeaderButton />,
       })}
     >
       <Tabs.Screen name="home" options={{ title: 'Home' }} />
       <Tabs.Screen name="momentum" options={{ title: 'Momentum' }} />
       <Tabs.Screen name="messages" options={{ title: 'Messages' }} />
       <Tabs.Screen name="replay" options={{ title: 'Replay' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }

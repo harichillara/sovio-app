@@ -5,7 +5,7 @@
     "dev": "pnpm --filter @sovio/mobile dev",
     "dev:web": "pnpm --filter @sovio/web dev",
     "build": "pnpm --filter @sovio/web build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "^5.4.0"

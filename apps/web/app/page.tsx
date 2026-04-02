@@ -1,47 +1,105 @@
+import Link from 'next/link';
+import { FeatureStory } from '../components/marketing/FeatureStory';
+import { HeroScene } from '../components/marketing/HeroScene';
+import { LoopRail } from '../components/marketing/LoopRail';
+import { SectionShell } from '../components/marketing/SectionShell';
+import { SignalBackground } from '../components/marketing/SignalBackground';
+import { WaitlistForm } from '../components/marketing/WaitlistForm';
+import {
+  heroCtas,
+  heroSignals,
+  loopSteps,
+  marketingFeatures,
+  trustPillars,
+} from '../content/marketing';
+
 export default function Page() {
   return (
-    <main style={{ maxWidth: 920, margin: '0 auto', padding: '0 32px' }}>
-      <section style={{ padding: '64px 28px', borderRadius: 28, background: 'var(--sovio-surface)', marginBottom: 32 }}>
-        <p style={{ color: 'var(--sovio-accent)', fontWeight: 800, marginBottom: 8, fontSize: 14, letterSpacing: 1 }}>SOVIO</p>
-        <h1 style={{ fontSize: 52, lineHeight: 1.05, margin: '0 0 16px', color: 'var(--sovio-text)' }}>
-          Stop scrolling. Start doing.
-        </h1>
-        <p style={{ fontSize: 18, lineHeight: 1.6, color: 'var(--sovio-muted)', maxWidth: 640, margin: '0 0 32px' }}>
-          Sovio helps you make real plans faster with smarter suggestions, lighter planning, and less effort.
-        </p>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <a href="#" style={{ display: 'inline-block', background: 'var(--sovio-accent)', color: 'var(--sovio-background)', padding: '14px 28px', borderRadius: 18, fontWeight: 800, textDecoration: 'none', fontSize: 15 }}>
-            Download the app
-          </a>
-          <a href="/pricing" style={{ display: 'inline-block', background: 'var(--sovio-surfaceAlt)', color: 'var(--sovio-text)', padding: '14px 28px', borderRadius: 18, fontWeight: 800, textDecoration: 'none', fontSize: 15 }}>
-            See pricing
-          </a>
+    <>
+      <section className="hero-section">
+        <SignalBackground />
+        <div className="site-frame hero-layout">
+          <div className="hero-copy">
+            <p className="hero-copy__eyebrow">2040 social operating system</p>
+            <h1 className="hero-copy__title">
+              The app that feels one step ahead of your life.
+            </h1>
+            <p className="hero-copy__summary">
+              Sovio is an anticipatory layer over your real world. It predicts
+              the right move, assembles social momentum, drafts the friction
+              away, and turns almost-moments into actual plans.
+            </p>
+            <div className="hero-copy__actions">
+              {heroCtas.map((cta) => (
+                <Link
+                  key={cta.label}
+                  href={cta.href}
+                  className={`cta-link cta-link--${cta.variant}`}
+                >
+                  {cta.label}
+                </Link>
+              ))}
+            </div>
+            <div className="hero-copy__meta">
+              <span>Intent Cloud</span>
+              <span>Presence Score</span>
+              <span>Social Momentum</span>
+              <span>Reality Replay</span>
+            </div>
+          </div>
+          <HeroScene signals={heroSignals} />
         </div>
       </section>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
-        {[
-          { icon: '\u2726', title: 'AI-powered plans', body: 'Sovio drafts plans, suggests times, and even writes your opening message. You just say yes.' },
-          { icon: '\u26A1', title: 'Low-effort coordination', body: 'No more group chat ping-pong. Quick matching and smart suggestions get everyone aligned faster.' },
-          { icon: '\u21BB', title: 'Replay missed moments', body: 'Skipped something? Sovio resurfaces it later so you never lose a good plan.' },
-        ].map((f) => (
-          <div key={f.title} style={{ background: 'var(--sovio-surface)', borderRadius: 22, padding: 24 }}>
-            <p style={{ fontSize: 28, margin: '0 0 8px' }}>{f.icon}</p>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--sovio-text)', margin: '0 0 8px' }}>{f.title}</h3>
-            <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--sovio-muted)', margin: 0 }}>{f.body}</p>
-          </div>
-        ))}
-      </section>
+      <SectionShell
+        eyebrow="Core loop"
+        title="One loop. Less friction. More life."
+        summary="Sovio keeps the product surface intentionally shallow. You open it, see one or two meaningful moves, commit, and leave."
+      >
+        <LoopRail steps={loopSteps} />
+      </SectionShell>
 
-      <section style={{ background: 'var(--sovio-accent)', borderRadius: 24, padding: '48px 32px', textAlign: 'center', marginBottom: 48 }}>
-        <h2 style={{ color: 'var(--sovio-background)', fontSize: 32, fontWeight: 800, margin: '0 0 12px' }}>Do more. Think less.</h2>
-        <p style={{ color: 'var(--sovio-surfaceAlt)', fontSize: 16, margin: '0 0 24px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
-          Join the people who stopped scrolling and started doing.
-        </p>
-        <a href="#" style={{ display: 'inline-block', background: 'var(--sovio-background)', color: 'var(--sovio-accent)', padding: '14px 32px', borderRadius: 18, fontWeight: 800, textDecoration: 'none', fontSize: 15 }}>
-          Get Sovio free
-        </a>
-      </section>
-    </main>
+      <SectionShell
+        eyebrow="Product systems"
+        title="Seven systems designed to feel like one calm intelligence."
+        summary="Each layer handles a different kind of social drag: indecision, inertia, silence, missed timing, and the cost of too many tiny choices."
+      >
+        <div className="feature-stack">
+          {marketingFeatures.map((feature, index) => (
+            <FeatureStory key={feature.slug} feature={feature} index={index} />
+          ))}
+        </div>
+      </SectionShell>
+
+      <SectionShell
+        eyebrow="Trust and control"
+        title="Built to feel powerful without feeling reckless."
+        summary="Autonomy in Sovio is not magic with no guardrails. The system stays bounded by approvals, risk checks, and sparse product surfaces that keep humans in the loop."
+      >
+        <div className="trust-grid">
+          {trustPillars.map((pillar) => (
+            <div key={pillar} className="trust-card">
+              {pillar}
+            </div>
+          ))}
+        </div>
+      </SectionShell>
+
+      <SectionShell
+        eyebrow="Early access"
+        title="Sovio is being tuned for people who want momentum, not more feed time."
+        summary="Join the waitlist to get launch access, product drops, and first access to the full momentum layer."
+        align="center"
+      >
+        <div className="waitlist-panel">
+          <WaitlistForm source="landing-final" />
+          <div className="hero-copy__actions" style={{ marginTop: 18 }}>
+            <Link href="/pricing" className="cta-link cta-link--secondary">
+              Explore pricing
+            </Link>
+          </div>
+        </div>
+      </SectionShell>
+    </>
   );
 }

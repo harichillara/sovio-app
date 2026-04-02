@@ -5,7 +5,8 @@
   "main": "src/index.tsx",
   "types": "src/index.tsx",
   "dependencies": {
-    "@sovio/tokens": "workspace:*"
+    "@sovio/tokens": "workspace:*",
+    "react-native-svg": "^15.15.4"
   },
   "peerDependencies": {
     "react": "*",

@@ -3,9 +3,9 @@ import * as plansService from '../services/plans.service';
 import { queryKeys } from './queryKeys';
 import { useAuthStore } from '../stores/auth.store';
 import { usePlansStore } from '../stores/plans.store';
-import type { PlanInsert, PlanUpdate } from '../supabase/types';
+import type { Plan, PlanInsert, PlanUpdate } from '../supabase/types';
 
-export function usePlans(filters?: { status?: string; limit?: number }) {
+export function usePlans(filters?: { status?: Plan['status']; limit?: number }) {
   const userId = useAuthStore((s) => s.user?.id);
   const setActivePlans = usePlansStore((s) => s.setActivePlans);
 

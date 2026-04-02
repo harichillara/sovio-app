@@ -32,6 +32,7 @@ function RouteGuard() {
               name="(modals)"
               options={{ presentation: 'modal' }}
             />
+            <Stack.Screen name="settings" />
           </>
         )}
       </Stack>

@@ -65,7 +65,7 @@ export interface TabScreenProps {
   children: ReactNode;
 }
 
-// --- New component prop interfaces ---
+// --- Existing component prop interfaces ---
 
 export interface TextInputProps {
   label?: string;
@@ -104,4 +104,71 @@ export interface MessageBubbleProps {
   isMine: boolean;
   isAIDraft: boolean;
   timestamp: string;
+}
+
+// --- Sprint 2: New component prop interfaces ---
+
+export interface SuggestionCardProps {
+  title: string;
+  summary: string;
+  type: 'plan' | 'place' | 'group';
+  onAccept: () => void;
+  onDismiss: () => void;
+}
+
+export interface SuggestionDeckProps {
+  suggestions: {
+    id: string;
+    title: string;
+    summary: string;
+    type: 'plan' | 'place' | 'group';
+  }[];
+  onAccept: (id: string) => void;
+  onDismiss: (id: string) => void;
+}
+
+export interface PresenceScoreRingProps {
+  score: number;
+  maxScore?: number;
+  size?: number;
+}
+
+export interface AvailableToggleProps {
+  isAvailable: boolean;
+  onToggle: (next: boolean) => void;
+  category?: string;
+  expiresAt?: string | null;
+}
+
+export interface ReportSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (reason: string) => void;
+  targetType: 'message' | 'plan' | 'profile' | 'suggestion';
+  targetId: string;
+}
+
+export interface BlockConfirmModalProps {
+  visible: boolean;
+  userName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export interface QueueToastProps {
+  visible: boolean;
+  message?: string;
+  isPro?: boolean;
+}
+
+export interface InsightCardProps {
+  insight: string;
+  experiment?: string;
+  weekOf: string;
+}
+
+export interface QuotaMeterProps {
+  used: number;
+  limit: number;
+  label?: string;
 }

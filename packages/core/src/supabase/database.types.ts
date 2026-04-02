@@ -337,6 +337,196 @@ export type Database = {
           },
         ];
       };
+      ai_jobs: {
+        Row: {
+          id: string;
+          user_id: string;
+          job_type: string;
+          status: string;
+          result: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          job_type: string;
+          status?: string;
+          result?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          job_type?: string;
+          status?: string;
+          result?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_jobs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      analytics_events: {
+        Row: {
+          id: string;
+          user_id: string;
+          event: string;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          event: string;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          event?: string;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'analytics_events_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      app_events: {
+        Row: {
+          id: string;
+          user_id: string;
+          event_type: string;
+          payload: Json | null;
+          source: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          event_type: string;
+          payload?: Json | null;
+          source?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          event_type?: string;
+          payload?: Json | null;
+          source?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'app_events_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      audit_log: {
+        Row: {
+          id: string;
+          actor_id: string;
+          action: string;
+          target_type: string;
+          target_id: string;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_id: string;
+          action: string;
+          target_type: string;
+          target_id: string;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          actor_id?: string;
+          action?: string;
+          target_type?: string;
+          target_id?: string;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'audit_log_actor_id_fkey';
+            columns: ['actor_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      entitlements: {
+        Row: {
+          id: string;
+          user_id: string;
+          plan: 'free' | 'pro';
+          status: 'active' | 'canceled' | 'past_due' | 'trialing';
+          pro_until: string | null;
+          current_period_end: string | null;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          daily_ai_calls_used: number;
+          daily_ai_calls_reset_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          plan?: 'free' | 'pro';
+          status?: 'active' | 'canceled' | 'past_due' | 'trialing';
+          pro_until?: string | null;
+          current_period_end?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          daily_ai_calls_used?: number;
+          daily_ai_calls_reset_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          plan?: 'free' | 'pro';
+          status?: 'active' | 'canceled' | 'past_due' | 'trialing';
+          pro_until?: string | null;
+          current_period_end?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          daily_ai_calls_used?: number;
+          daily_ai_calls_reset_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'entitlements_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       missed_moments: {
         Row: {
           id: string;
@@ -378,21 +568,27 @@ export type Database = {
       };
       friendships: {
         Row: {
+          id: string;
           user_id: string;
           friend_id: string;
           status: 'pending' | 'accepted' | 'blocked';
+          blocked_by: string | null;
           created_at: string;
         };
         Insert: {
+          id?: string;
           user_id: string;
           friend_id: string;
           status?: 'pending' | 'accepted' | 'blocked';
+          blocked_by?: string | null;
           created_at?: string;
         };
         Update: {
+          id?: string;
           user_id?: string;
           friend_id?: string;
           status?: 'pending' | 'accepted' | 'blocked';
+          blocked_by?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -406,6 +602,82 @@ export type Database = {
           {
             foreignKeyName: 'friendships_friend_id_fkey';
             columns: ['friend_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      momentum_availability: {
+        Row: {
+          id: string;
+          user_id: string;
+          bucket: string;
+          category: string | null;
+          available_until: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          bucket: string;
+          category?: string | null;
+          available_until: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          bucket?: string;
+          category?: string | null;
+          available_until?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'momentum_availability_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      presence_daily: {
+        Row: {
+          id: string;
+          user_id: string;
+          day: string;
+          score: number;
+          activity_score: number;
+          social_score: number;
+          movement_score: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day: string;
+          score: number;
+          activity_score: number;
+          social_score: number;
+          movement_score: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day?: string;
+          score?: number;
+          activity_score?: number;
+          social_score?: number;
+          movement_score?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'presence_daily_user_id_fkey';
+            columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
@@ -437,6 +709,104 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'push_tokens_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          content_type: string;
+          content_id: string;
+          reported_user_id: string | null;
+          reason: string;
+          details: string | null;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          content_type: string;
+          content_id: string;
+          reported_user_id?: string | null;
+          reason: string;
+          details?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reporter_id?: string;
+          content_type?: string;
+          content_id?: string;
+          reported_user_id?: string | null;
+          reason?: string;
+          details?: string | null;
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'reports_reporter_id_fkey';
+            columns: ['reporter_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'reports_reported_user_id_fkey';
+            columns: ['reported_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      suggestions: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          summary: string;
+          type: 'plan' | 'place' | 'group';
+          status: 'new' | 'accepted' | 'dismissed' | 'expired';
+          confidence: number;
+          dismiss_reason: string | null;
+          expires_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          summary: string;
+          type: 'plan' | 'place' | 'group';
+          status?: 'new' | 'accepted' | 'dismissed' | 'expired';
+          confidence?: number;
+          dismiss_reason?: string | null;
+          expires_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          summary?: string;
+          type?: 'plan' | 'place' | 'group';
+          status?: 'new' | 'accepted' | 'dismissed' | 'expired';
+          confidence?: number;
+          dismiss_reason?: string | null;
+          expires_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'suggestions_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
