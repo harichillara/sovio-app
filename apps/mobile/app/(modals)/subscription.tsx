@@ -3,12 +3,12 @@ import { View, Text, ScrollView, Pressable, Alert, Linking, ActivityIndicator } 
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, Button } from '@sovio/ui';
-import { useAuthStore } from '@sovio/core';
 import {
+  useAuthStore,
   useSubscription,
   useCreateCheckout,
   useCancelSubscription,
-} from '@sovio/core/hooks/useBilling';
+} from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
 
 const features = [

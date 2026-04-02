@@ -26,6 +26,8 @@ export * as presenceService from './services/presence.service';
 export * as momentumService from './services/momentum.service';
 export * as moderationService from './services/moderation.service';
 export * as entitlementsService from './services/entitlements.service';
+export * as autopilotService from './services/autopilot.service';
+export * as billingService from './services/billing.service';
 
 // Stores
 export { useAuthStore } from './stores/auth.store';
@@ -51,6 +53,7 @@ export * from './hooks/useMomentum';
 export * from './hooks/useEntitlements';
 export * from './hooks/useEvents';
 export * from './hooks/useAutopilot';
+export * from './hooks/useBilling';
 
 // Providers
 export { QueryProvider, queryClient } from './providers/QueryProvider';

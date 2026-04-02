@@ -681,6 +681,44 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
+            },
+          ];
+        };
+      weekly_insights: {
+        Row: {
+          id: string;
+          user_id: string;
+          week_of: string;
+          insight: string;
+          experiment: string | null;
+          experiment_done: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          week_of: string;
+          insight: string;
+          experiment?: string | null;
+          experiment_done?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          week_of?: string;
+          insight?: string;
+          experiment?: string | null;
+          experiment_done?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'weekly_insights_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
           },
         ];
       };
