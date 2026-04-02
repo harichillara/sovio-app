@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { IBM_Plex_Mono, Space_Grotesk } from 'next/font/google';
 import { cssVars } from '@sovio/tokens/css';
 import { darkTheme } from '@sovio/tokens';
-import { WebNav } from './WebNav';
 import './globals.css';
 
 const displayFont = Space_Grotesk({
@@ -46,7 +45,12 @@ export default function RootLayout({
                 <span className="site-brand__mark">Sovio</span>
                 <span className="site-brand__tag">Plans, without the effort</span>
               </Link>
-              <WebNav />
+              <nav className="site-nav__links">
+                <Link href="/">Home</Link>
+                <Link href="/pricing">Pricing</Link>
+                <Link href="/waitlist">Waitlist</Link>
+                <Link href="/login">Login</Link>
+              </nav>
             </div>
           </header>
           <main className="site-main">{children}</main>
