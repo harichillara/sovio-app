@@ -1,18 +1,37 @@
 import React from 'react';
-import { TabScreen, HeroActionCard, MiniActionCard } from '@sovio/ui';
+import { router } from 'expo-router';
+import { TabScreen, MiniActionCard, EmptyState } from '@sovio/ui';
+import { usePlans } from '@sovio/core';
 
 export default function MomentumTab() {
+  const { data: plans, isLoading } = usePlans({ status: 'active' });
+
+  const activePlans = plans ?? [];
+
   return (
     <TabScreen title="Momentum" subtitle="Active plans and quick coordination">
-      <HeroActionCard
-        eyebrow="AVAILABLE NOW"
-        title="Turn on quick matching"
-        body="Let Sovio pull a simple group together if the right moment shows up."
-        primaryLabel="Turn on"
-        secondaryLabel="Later"
-      />
-      <MiniActionCard title="Tonight's easiest plan" body="One low-friction option is close and easy to lock." label="Preview" />
-      <MiniActionCard title="Your active threads" body="Current plans and invites show up here." label="Open messages" />
+      {activePlans.length === 0 ? (
+        <EmptyState
+          icon="flash-outline"
+          title="No active plans"
+          body="When you create or join a plan, it shows up here for quick coordination."
+          actionLabel="Create a plan"
+          onAction={() => router.push('/(modals)/create-plan')}
+        />
+      ) : (
+        activePlans.map((plan) => (
+          <MiniActionCard
+            key={plan.id}
+            title={plan.title}
+            body={plan.description ?? 'Tap to see details'}
+            label={plan.scheduled_at
+              ? new Date(plan.scheduled_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+              : 'No date set'
+            }
+            onPress={() => router.push({ pathname: '/(modals)/plan-detail', params: { planId: plan.id } })}
+          />
+        ))
+      )}
     </TabScreen>
   );
 }

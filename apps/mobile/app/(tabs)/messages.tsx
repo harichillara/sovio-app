@@ -1,12 +1,60 @@
 import React from 'react';
-import { TabScreen, MiniActionCard, UpgradeBanner } from '@sovio/ui';
+import { View, Text } from 'react-native';
+import { router } from 'expo-router';
+import { useTheme } from '@sovio/tokens/ThemeContext';
+import { TabScreen, MiniActionCard, EmptyState } from '@sovio/ui';
+import { useThreads } from '@sovio/core';
 
 export default function MessagesTab() {
+  const { theme } = useTheme();
+  const { data: threads, isLoading } = useThreads();
+
+  const threadList = threads ?? [];
+
   return (
     <TabScreen title="Messages" subtitle="Reply faster without overthinking it">
-      <MiniActionCard title="Tonight group" body="3 unread. Sovio can draft a quick reply." label="Open thread" />
-      <MiniActionCard title="Coffee invite" body="A low-pressure reply is ready to send." label="Use AI draft" />
-      <UpgradeBanner title="Sovio Pro" body="Unlock more AI drafts and auto-reply eligibility in safe contexts." />
+      {threadList.length === 0 ? (
+        <EmptyState
+          icon="chatbubble-outline"
+          title="No conversations yet"
+          body="Start a plan and conversations will appear here automatically."
+        />
+      ) : (
+        threadList.map((entry: any) => {
+          const thread = entry.threads ?? entry;
+          const latestMessage = entry.latest_message;
+          const unread = entry.unread_count ?? 0;
+
+          return (
+            <View key={thread.id}>
+              <MiniActionCard
+                title={thread.title}
+                body={latestMessage?.content ?? 'No messages yet'}
+                label={unread > 0 ? `${unread} new` : 'Open thread'}
+                onPress={() => router.push({ pathname: '/(modals)/thread-detail', params: { threadId: thread.id } })}
+              />
+              {unread > 0 ? (
+                <View style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  backgroundColor: theme.accent,
+                  borderRadius: 10,
+                  minWidth: 20,
+                  height: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 6,
+                }}>
+                  <Text style={{ color: theme.background, fontSize: 11, fontWeight: '800' }}>
+                    {unread}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          );
+        })
+      )}
     </TabScreen>
   );
 }
