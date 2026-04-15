@@ -266,9 +266,9 @@ export async function cancelSubscription(userId: string): Promise<Subscription> 
       provider: 'staged',
       currentPeriodEnd: entitlementEnd,
     });
-    // Don't mutate the entitlements table while Stripe is staged —
-    // just record the intent so billing can be reconciled later.
-    return subscription;
+    console.warn('[billing] Stripe not ready — cancellation recorded as intent, not executed');
+    // Return subscription with cancel_at_period_end so UI reflects the user's intent
+    return { ...subscription, cancel_at_period_end: true };
   }
 
   const { error: cancelError } = await supabase.functions.invoke('cancel-subscription', {
