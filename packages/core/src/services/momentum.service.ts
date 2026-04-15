@@ -1,5 +1,6 @@
 import { supabase } from '../supabase/client';
 import type { Database } from '../supabase/database.types';
+import type { AvailabilityMode, ConfidenceLabel, MomentumSource } from '../supabase/app-types';
 
 type MomentumUpdate = Database['public']['Tables']['momentum_availability']['Update'];
 type MomentumInsert = Database['public']['Tables']['momentum_availability']['Insert'];
@@ -39,9 +40,9 @@ export interface MomentumAvailability {
   available_until: string;
   lat: number | null;
   lng: number | null;
-  availability_mode: string;
-  confidence_label: string;
-  source: string;
+  availability_mode: AvailabilityMode;
+  confidence_label: ConfidenceLabel;
+  source: MomentumSource;
   created_at: string;
 }
 
@@ -54,9 +55,9 @@ function normalizeAvailability(row: Record<string, unknown>): MomentumAvailabili
     available_until: String(row.available_until ?? row.expires_at ?? row.created_at ?? new Date().toISOString()),
     lat: (row.lat as number | null) ?? null,
     lng: (row.lng as number | null) ?? null,
-    availability_mode: String(row.availability_mode ?? 'open_now'),
-    confidence_label: String(row.confidence_label ?? 'open_to_plans'),
-    source: String(row.source ?? 'manual'),
+    availability_mode: (row.availability_mode as AvailabilityMode) ?? 'open_now',
+    confidence_label: (row.confidence_label as ConfidenceLabel) ?? 'open_to_plans',
+    source: (row.source as MomentumSource) ?? 'manual',
     created_at: String(row.created_at ?? new Date().toISOString()),
   };
 }
@@ -70,7 +71,7 @@ export interface NearbyAvailableFriend {
   distance_meters: number;
   category: string | null;
   available_until: string;
-  confidence_label: string;
+  confidence_label: ConfidenceLabel;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,9 +89,9 @@ export async function setAvailable(
   options?: {
     lat?: number | null;
     lng?: number | null;
-    availabilityMode?: string;
-    confidenceLabel?: string;
-    source?: string;
+    availabilityMode?: AvailabilityMode;
+    confidenceLabel?: ConfidenceLabel;
+    source?: MomentumSource;
   },
 ): Promise<MomentumAvailability> {
   const availableUntil = new Date(
@@ -237,8 +238,8 @@ export async function getAvailableUsers(
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('[getAvailableUsers] DB query failed — returning empty list. Bucket:', bucket, 'Error:', error.message);
-    return [];
+    console.error('[getAvailableUsers] DB query failed. Bucket:', bucket, 'Error:', error.message);
+    throw error;
   }
   return (data ?? [])
     .map((row) => normalizeAvailability(row as Record<string, unknown>))
@@ -260,8 +261,8 @@ export async function getMyAvailability(
     .maybeSingle();
 
   if (error) {
-    console.error('[getMyAvailability] DB query failed — returning null. UserId:', userId, 'Error:', error.message);
-    return null;
+    console.error('[getMyAvailability] DB query failed. UserId:', userId, 'Error:', error.message);
+    throw error;
   }
   if (!data) return null;
 
@@ -304,8 +305,8 @@ export async function getNearbyAvailableFriends(
   });
 
   if (error) {
-    console.error('[getNearbyAvailableFriends] RPC call failed — returning empty list. UserId:', userId, 'Error:', error.message);
-    return [];
+    console.error('[getNearbyAvailableFriends] RPC call failed. UserId:', userId, 'Error:', error.message);
+    throw error;
   }
   return (data ?? []) as NearbyAvailableFriend[];
 }

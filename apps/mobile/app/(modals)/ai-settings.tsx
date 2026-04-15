@@ -170,7 +170,7 @@ export default function AISettingsModal() {
                 savePref('ai_auto_reply', v);
               }}
               trackColor={{ false: theme.border, true: theme.accent }}
-              thumbColor="#FFF"
+              thumbColor={theme.background}
               disabled={tier !== 'pro'}
             />
           </View>

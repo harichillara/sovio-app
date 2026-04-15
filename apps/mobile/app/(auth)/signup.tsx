@@ -86,6 +86,7 @@ export default function SignUpScreen() {
       }
     } catch (e) {
       console.error(e);
+      setOauthError(e instanceof Error ? e.message : 'Apple sign-in failed.');
     }
   };
 

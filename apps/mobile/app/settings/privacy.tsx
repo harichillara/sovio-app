@@ -87,17 +87,21 @@ export default function PrivacySettings() {
           style: 'destructive',
           onPress: async () => {
             if (!userId) return;
-            // Track the event, actual deletion handled server-side
-            await eventsService.trackEvent(
-              userId,
-              eventsService.EventTypes.ACCOUNT_DELETION_REQUESTED,
-              {},
-              'privacy',
-            );
-            Alert.alert(
-              'Account Deletion Requested',
-              'Your account will be deleted within 30 days. You will receive a confirmation email.',
-            );
+            try {
+              await eventsService.trackEvent(
+                userId,
+                eventsService.EventTypes.ACCOUNT_DELETION_REQUESTED,
+                {},
+                'privacy',
+              );
+              Alert.alert(
+                'Account Deletion Requested',
+                'Your account will be deleted within 30 days. You will receive a confirmation email.',
+              );
+            } catch (err) {
+              console.error('[Privacy] Account deletion request failed:', err);
+              Alert.alert('Error', 'Could not submit deletion request. Please try again.');
+            }
           },
         },
       ],

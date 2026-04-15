@@ -4,6 +4,7 @@ import * as eventsService from '../services/events.service';
 import { queryKeys } from './queryKeys';
 import { useAuthStore } from '../stores/auth.store';
 import { useLocationStore } from '../stores/location.store';
+import type { AvailabilityMode, ConfidenceLabel, MomentumSource } from '../supabase/app-types';
 
 /**
  * Check if the current user is available.
@@ -45,9 +46,9 @@ export function useSetAvailable() {
       durationMins: number;
       lat?: number | null;
       lng?: number | null;
-      availabilityMode?: string;
-      confidenceLabel?: string;
-      source?: string;
+      availabilityMode?: AvailabilityMode;
+      confidenceLabel?: ConfidenceLabel;
+      source?: MomentumSource;
     }) => {
       if (!userId) throw new Error('Not authenticated');
       const result = await momentumService.setAvailable(

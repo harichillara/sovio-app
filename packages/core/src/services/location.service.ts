@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { supabase } from '../supabase/client';
 import type { LocationSnapshot } from '../supabase/types';
+import type { SharingMode } from '../supabase/app-types';
 
 export interface Coords {
   latitude: number;
@@ -33,7 +34,7 @@ export async function getPermissionStatus(): Promise<Location.PermissionStatus> 
 export async function captureLocationSnapshot(
   userId: string,
   location: Location.LocationObject,
-  sharingMode: 'approx' | 'precise' = 'approx',
+  sharingMode: SharingMode = 'approx',
 ): Promise<LocationSnapshot> {
   const coords = location.coords;
   const localityBucket = coordsToLocalityBucket({

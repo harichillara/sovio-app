@@ -29,7 +29,7 @@ export function ToggleRow({
         value={value}
         onValueChange={onValueChange}
         trackColor={{ false: theme.border, true: theme.accent }}
-        thumbColor="#FFF"
+        thumbColor={theme.background}
         disabled={disabled}
       />
     </View>

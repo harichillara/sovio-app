@@ -78,9 +78,13 @@ export function useUpdatePlan() {
 
 export function useDeletePlan() {
   const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
 
   return useMutation({
-    mutationFn: (planId: string) => plansService.deletePlan(planId),
+    mutationFn: (planId: string) => {
+      if (!userId) throw new Error('Not authenticated');
+      return plansService.deletePlan(planId, userId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
     },

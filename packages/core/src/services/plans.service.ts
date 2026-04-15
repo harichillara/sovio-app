@@ -81,12 +81,12 @@ export async function updatePlan(
   return data;
 }
 
-export async function deletePlan(planId: string, creatorId?: string) {
-  let query = supabase.from('plans').delete().eq('id', planId);
-  if (creatorId) {
-    query = query.eq('creator_id', creatorId);
-  }
-  const { error } = await query;
+export async function deletePlan(planId: string, creatorId: string) {
+  const { error } = await supabase
+    .from('plans')
+    .delete()
+    .eq('id', planId)
+    .eq('creator_id', creatorId);
   if (error) throw error;
 }
 
