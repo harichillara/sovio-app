@@ -32,11 +32,14 @@ function getEntitlementEndDate(subscription: Pick<Subscription, 'pro_until' | 'c
   return subscription.pro_until ?? subscription.current_period_end;
 }
 
+// Grace period to account for client/server clock skew (5 minutes)
+const CLOCK_SKEW_GRACE_MS = 5 * 60 * 1000;
+
 function hasActiveProAccess(subscription: Pick<Subscription, 'plan' | 'pro_until' | 'current_period_end'>) {
   if (subscription.plan !== 'pro') return false;
   const endDate = getEntitlementEndDate(subscription);
   if (!endDate) return false;
-  return new Date(endDate) > new Date();
+  return new Date(endDate).getTime() > (Date.now() - CLOCK_SKEW_GRACE_MS);
 }
 
 async function syncProfileTier(userId: string, tier: 'free' | 'pro') {
