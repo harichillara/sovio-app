@@ -6,8 +6,8 @@ type MomentumUpdate = Database['public']['Tables']['momentum_availability']['Upd
 type MomentumInsert = Database['public']['Tables']['momentum_availability']['Insert'];
 
 /**
- * Legacy schemas may include `expires_at` instead of `available_until`.
- * This escape-hatch type keeps the cast narrow rather than using `any`.
+ * Defensive fallback for non-standard row shapes that may surface from
+ * raw queries or edge functions. Keeps the cast narrow rather than using `any`.
  */
 type LegacyMomentumPayload = { bucket: string; expires_at: string };
 

@@ -67,7 +67,8 @@ export async function getSuggestions(
 }
 
 /**
- * Accept a suggestion — marks it accepted and tracks an app_event.
+ * Accept a suggestion — marks it accepted in the database.
+ * Callers are responsible for tracking the corresponding app_event.
  */
 export async function acceptSuggestion(suggestionId: string, userId: string): Promise<void> {
   const { error } = await supabase

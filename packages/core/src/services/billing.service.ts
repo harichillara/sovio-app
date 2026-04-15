@@ -174,9 +174,11 @@ export async function createCheckout(
 }
 
 /**
- * Handle a Stripe webhook event (server-side).
- * This stays wired for when Stripe is turned on, but it should be invoked
- * from a trusted function or webhook handler rather than the client app.
+ * Process a billing lifecycle event.
+ * WARNING: Must only be called from a trusted server-side context (e.g.,
+ * Supabase Edge Function handling Stripe webhooks). The event shape is a
+ * simplified projection of Stripe's webhook payload — not a raw Stripe event.
+ * Exported from @sovio/core for code sharing but must NOT be invoked from client code.
  */
 export async function handleWebhook(event: {
   type: string;

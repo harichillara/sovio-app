@@ -1,5 +1,4 @@
 export const queryKeys = {
-  // Existing
   profile: (userId: string) => ['profile', userId] as const,
   plans: (filters?: Record<string, unknown>) => ['plans', filters] as const,
   suggestedPlans: (userId: string) => ['suggested-plans', userId] as const,
@@ -11,7 +10,6 @@ export const queryKeys = {
   friendRequests: (userId: string) => ['friend-requests', userId] as const,
   missedMoments: (userId: string) => ['missed-moments', userId] as const,
 
-  // Sprint 1 additions
   suggestions: (userId: string) => ['suggestions', userId] as const,
   presence: (userId: string, day?: string) =>
     ['presence', userId, day] as const,

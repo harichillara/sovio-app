@@ -6,11 +6,6 @@ import { useAuthStore } from '../stores/auth.store';
 import * as authService from '../services/auth.service';
 import * as profileService from '../services/profile.service';
 
-/**
- * Capture the initial page URL at module-load time so it is available before
- * Expo Router (or any other code) can strip the OAuth query params via
- * history.replaceState.  On web this contains `?code=…` after a PKCE redirect.
- */
 interface AuthProviderProps {
   children: React.ReactNode;
 }
