@@ -86,13 +86,11 @@ export function useAcceptSuggestion() {
     mutationFn: async (suggestionId: string) => {
       if (!userId) throw new Error('Not authenticated');
       await suggestionsService.acceptSuggestion(suggestionId, userId);
-      if (userId) {
-        await eventsService.trackEvent(
-          userId,
-          eventsService.EventTypes.SUGGESTION_ACCEPTED,
-          { suggestionId },
-        );
-      }
+      await eventsService.trackEvent(
+        userId,
+        eventsService.EventTypes.SUGGESTION_ACCEPTED,
+        { suggestionId },
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.suggestions(userId ?? '') });
@@ -114,13 +112,11 @@ export function useDismissSuggestion() {
     }) => {
       if (!userId) throw new Error('Not authenticated');
       await suggestionsService.dismissSuggestion(suggestionId, userId, reason);
-      if (userId) {
-        await eventsService.trackEvent(
-          userId,
-          eventsService.EventTypes.SUGGESTION_DISMISSED,
-          { suggestionId, reason },
-        );
-      }
+      await eventsService.trackEvent(
+        userId,
+        eventsService.EventTypes.SUGGESTION_DISMISSED,
+        { suggestionId, reason },
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.suggestions(userId ?? '') });

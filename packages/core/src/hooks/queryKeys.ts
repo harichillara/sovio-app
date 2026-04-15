@@ -2,6 +2,7 @@ export const queryKeys = {
   // Existing
   profile: (userId: string) => ['profile', userId] as const,
   plans: (filters?: Record<string, unknown>) => ['plans', filters] as const,
+  suggestedPlans: (userId: string) => ['suggested-plans', userId] as const,
   plan: (planId: string) => ['plan', planId] as const,
   threads: (userId: string) => ['threads', userId] as const,
   messages: (threadId: string) => ['messages', threadId] as const,
@@ -19,6 +20,7 @@ export const queryKeys = {
   momentum: (userId: string) => ['momentum', userId] as const,
   nearbyFriends: (userId: string, bucket?: string) =>
     ['nearby-friends', userId, bucket] as const,
+  subscription: (userId: string) => ['subscription', userId] as const,
   entitlements: (userId: string) => ['entitlements', userId] as const,
   events: (userId: string) => ['events', userId] as const,
   notifications: (userId: string) => ['notifications', userId] as const,

@@ -92,27 +92,25 @@ type SubscriptionRow = Awaited<ReturnType<typeof getEntitlement>> & {
 };
 
 function mapEntitlementRow(row: SubscriptionRow): Subscription {
-  const base: Subscription = {
+  const plan = row.plan;
+  const status = row.status ?? 'active';
+  const pro_until = row.pro_until ?? null;
+  const current_period_end = row.current_period_end ?? null;
+  const is_pro_active = hasActiveProAccess({ plan, pro_until, current_period_end });
+
+  return {
     id: row.id,
     user_id: row.user_id,
-    plan: row.plan,
-    status: row.status ?? 'active',
-    pro_until: row.pro_until ?? null,
-    current_period_end: row.current_period_end ?? null,
+    plan,
+    status,
+    pro_until,
+    current_period_end,
     stripe_customer_id: row.stripe_customer_id ?? null,
     stripe_subscription_id: row.stripe_subscription_id ?? null,
     created_at: row.created_at,
     provider: STRIPE_READY ? 'stripe' : 'staged',
-    is_pro_active: false,
-    cancel_at_period_end: false,
-  };
-
-  const isProActive = hasActiveProAccess(base);
-
-  return {
-    ...base,
-    is_pro_active: isProActive,
-    cancel_at_period_end: base.status === 'canceled' && isProActive,
+    is_pro_active,
+    cancel_at_period_end: status === 'canceled' && is_pro_active,
   };
 }
 

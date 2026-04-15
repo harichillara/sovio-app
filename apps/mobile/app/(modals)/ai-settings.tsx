@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Switch, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, TokenMeter, LoadingOverlay, Button, ToggleRow } from '@sovio/ui';
 import { useAuthStore, useAITokens, useAIStore, useIsPro, supabase } from '@sovio/core';
-import { Ionicons } from '@expo/vector-icons';
 
 export default function AISettingsModal() {
   const { theme } = useTheme();
@@ -139,43 +138,22 @@ export default function AISettingsModal() {
               savePref('ai_message_drafts', v, () => setMessageDrafts(!v));
             }}
           />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text
-                  style={{
-                    color: tier !== 'pro' ? theme.muted : theme.text,
-                    fontSize: 15,
-                    fontWeight: '600',
-                  }}
-                >
-                  Auto-reply
-                </Text>
-                {tier !== 'pro' && (
-                  <Ionicons name="lock-closed" size={14} color={theme.muted} />
-                )}
-              </View>
-              <Text style={{ color: theme.muted, fontSize: 13 }}>
-                {tier === 'pro'
-                  ? 'Automatically send AI replies in safe contexts'
-                  : 'Pro only -- upgrade to unlock'}
-              </Text>
-            </View>
-            <Switch
-              value={autoReply}
-              onValueChange={(v) => {
-                if (tier !== 'pro') {
-                  router.push('/(modals)/subscription');
-                  return;
-                }
-                setAutoReply(v);
-                savePref('ai_auto_reply', v, () => setAutoReply(!v));
-              }}
-              trackColor={{ false: theme.border, true: theme.accent }}
-              thumbColor={theme.background}
-              disabled={tier !== 'pro'}
-            />
-          </View>
+          <ToggleRow
+            label="Auto-reply"
+            description={tier === 'pro'
+              ? 'Automatically send AI replies in safe contexts'
+              : 'Pro only -- upgrade to unlock'}
+            value={autoReply}
+            onValueChange={(v) => {
+              if (tier !== 'pro') {
+                router.push('/(modals)/subscription');
+                return;
+              }
+              setAutoReply(v);
+              savePref('ai_auto_reply', v, () => setAutoReply(!v));
+            }}
+            disabled={tier !== 'pro'}
+          />
         </View>
 
         {/* AI Usage section */}
@@ -201,13 +179,13 @@ export default function AISettingsModal() {
             Today's AI calls: {tokensUsed} / {dailyLimit}
           </Text>
 
-            <Text style={{ color: theme.muted, fontSize: 13 }}>
-              {tier === 'pro'
-                ? `Pro plan: ${dailyLimit} AI calls per day`
-                : `Free plan: ${dailyLimit} AI calls per day. Pro access is rolling out in waves.`}
-            </Text>
+          <Text style={{ color: theme.muted, fontSize: 13 }}>
+            {tier === 'pro'
+              ? `Pro plan: ${dailyLimit} AI calls per day`
+              : `Free plan: ${dailyLimit} AI calls per day. Pro access is rolling out in waves.`}
+          </Text>
 
-            {tier === 'free' && (
+          {tier === 'free' && (
             <Pressable
               onPress={() => router.push('/(modals)/subscription')}
               style={{

@@ -167,12 +167,11 @@ export async function setAvailable(
   }
 
   const { error } = await supabase
-      .from('momentum_availability')
-      .insert({
-        user_id: userId,
-        ...(primaryPayload as MomentumInsert | LegacyMomentumPayload),
-      } as MomentumInsert)
-    ;
+    .from('momentum_availability')
+    .insert({
+      user_id: userId,
+      ...(primaryPayload as MomentumInsert | LegacyMomentumPayload),
+    } as MomentumInsert);
 
   if (!error) {
     const refreshed = await getMyAvailability(userId);
@@ -188,8 +187,7 @@ export async function setAvailable(
     .insert({
       user_id: userId,
       ...fallbackPayload,
-    } as MomentumInsert)
-    ;
+    } as MomentumInsert);
 
   if (fallbackError) throw fallbackError;
 

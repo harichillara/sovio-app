@@ -34,7 +34,7 @@ export function useSuggestedPlans() {
   const setSuggestedPlans = usePlansStore((s) => s.setSuggestedPlans);
 
   return useQuery({
-    queryKey: ['suggested-plans', userId],
+    queryKey: queryKeys.suggestedPlans(userId ?? ''),
     queryFn: async () => {
       if (!userId) return [];
       const plans = await plansService.getSuggestedPlans(userId);

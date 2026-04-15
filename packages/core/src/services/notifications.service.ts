@@ -35,29 +35,19 @@ export async function registerForPushNotifications(
     });
   }
 
-  // Get the push token
-  const tokenData = await Notifications.getExpoPushTokenAsync();
-  const token = tokenData.data;
-
-  // Determine platform
-  const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+  const token = (await Notifications.getExpoPushTokenAsync()).data;
+  const platform: 'ios' | 'android' = Platform.OS === 'ios' ? 'ios' : 'android';
 
   // Save to push_tokens table (upsert by user_id + token)
   const { error } = await supabase.from('push_tokens').upsert(
-    {
-      user_id: userId,
-      token,
-      platform: platform as 'ios' | 'android',
-    },
+    { user_id: userId, token, platform },
     { onConflict: 'user_id,token' },
   );
 
   if (error) {
     // If upsert fails on conflict spec, try insert as fallback
     const { error: insertError } = await supabase.from('push_tokens').insert({
-      user_id: userId,
-      token,
-      platform: platform as 'ios' | 'android',
+      user_id: userId, token, platform,
     });
     if (insertError) throw insertError;
   }

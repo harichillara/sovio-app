@@ -3,17 +3,13 @@ import * as billingService from '../services/billing.service';
 import { useAuthStore } from '../stores/auth.store';
 import { queryKeys } from './queryKeys';
 
-const BILLING_KEYS = {
-  subscription: (userId: string) => ['subscription', userId] as const,
-};
-
 export function useSubscription() {
   const userId = useAuthStore((s) => s.user?.id);
   const profile = useAuthStore((s) => s.profile);
   const setProfile = useAuthStore((s) => s.setProfile);
 
   return useQuery({
-    queryKey: BILLING_KEYS.subscription(userId ?? ''),
+    queryKey: queryKeys.subscription(userId ?? ''),
     queryFn: async () => {
       if (!userId) return null;
       const subscription = await billingService.getSubscription(userId);
@@ -62,7 +58,7 @@ export function useCancelSubscription() {
       }
 
       queryClient.invalidateQueries({
-        queryKey: BILLING_KEYS.subscription(userId ?? ''),
+        queryKey: queryKeys.subscription(userId ?? ''),
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.entitlements(userId ?? ''),
