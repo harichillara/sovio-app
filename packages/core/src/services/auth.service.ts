@@ -30,8 +30,9 @@ function extractParams(url: string): Record<string, string> {
         if (!params[key]) params[key] = value;
       });
     }
-  } catch {
+  } catch (e) {
     // Fallback: manual parsing for environments without URL API
+    if (__DEV__) console.debug('[extractParams] URL API unavailable, using manual parse:', (e as Error).message);
     const [, queryAndHash] = url.split('?');
     if (queryAndHash) {
       const [query, hash] = queryAndHash.split('#');
