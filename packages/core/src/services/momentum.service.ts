@@ -290,11 +290,18 @@ export async function getNearbyAvailableFriends(
       .select('available_until, category')
       .limit(1);
 
-    nearbyFriendsRpcSupported = !shapeError;
-    if (!nearbyFriendsRpcSupported) {
-      console.warn('Nearby friends RPC disabled until schema alignment is complete');
+    if (shapeError) {
+      // Only permanently disable for schema errors (relation/column not found),
+      // not for transient failures like network timeouts
+      const isSchemaError = shapeError.code === '42P01' || shapeError.code === '42703';
+      if (isSchemaError) {
+        nearbyFriendsRpcSupported = false;
+        console.warn('Nearby friends RPC disabled until schema alignment is complete');
+      }
+      // Leave as null so next call retries after transient errors
       return [];
     }
+    nearbyFriendsRpcSupported = true;
   }
 
   const { data, error } = await supabase.rpc('get_nearby_available_friends', {
