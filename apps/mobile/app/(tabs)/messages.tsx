@@ -11,15 +11,13 @@ import {
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, AppHeader, EmptyState, withAlpha } from '@sovio/ui';
-import { useThreads, useIsPro } from '@sovio/core';
+import { useThreads } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
 import { TopRightActions } from '../../components/TopRightActions';
 
 export default function MessagesTab() {
   const { theme } = useTheme();
   const { data: threads, isLoading, refetch } = useThreads();
-  const isPro = useIsPro();
-
   const threadList = threads ?? [];
 
   const handleLongPress = useCallback(
@@ -131,13 +129,6 @@ export default function MessagesTab() {
             </Text>
           </View>
 
-          {/* Auto-reply indicator — only show when entry has the flag */}
-          {isPro && entry.auto_reply_enabled && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-              <Ionicons name="flash-outline" size={10} color={theme.muted} />
-              <Text style={{ color: theme.muted, fontSize: 10 }}>Auto-reply</Text>
-            </View>
-          )}
         </View>
 
         {/* Unread badge */}
