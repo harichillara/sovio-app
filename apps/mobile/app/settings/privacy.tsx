@@ -56,13 +56,15 @@ export default function PrivacySettings() {
   }, [userId]);
 
   const savePref = useCallback(
-    async (key: string, value: string) => {
+    async (key: string, value: string, revert: () => void) => {
       if (!userId) return;
       const { error: saveError } = await supabase
         .from('user_preferences')
         .upsert({ user_id: userId, key, value }, { onConflict: 'user_id,key' });
       if (saveError) {
         console.error('[PrivacySettings] Failed to save preference', key, saveError.message);
+        revert();
+        Alert.alert('Error', 'Could not save preference. Please try again.');
       }
     },
     [userId],
@@ -140,7 +142,7 @@ export default function PrivacySettings() {
             value={sharePresence}
             onValueChange={(v) => {
               setSharePresence(v);
-              savePref('privacy_share_presence', String(v));
+              savePref('privacy_share_presence', String(v), () => setSharePresence(!v));
             }}
           />
 
@@ -150,7 +152,7 @@ export default function PrivacySettings() {
             value={allowAILearn}
             onValueChange={(v) => {
               setAllowAILearn(v);
-              savePref('privacy_ai_learn', String(v));
+              savePref('privacy_ai_learn', String(v), () => setAllowAILearn(!v));
             }}
           />
 
@@ -161,7 +163,7 @@ export default function PrivacySettings() {
             onValueChange={(v) => {
               if (tier !== 'pro') return;
               setAllowAutoReply(v);
-              savePref('privacy_auto_reply', String(v));
+              savePref('privacy_auto_reply', String(v), () => setAllowAutoReply(!v));
             }}
             disabled={tier !== 'pro'}
           />
@@ -174,8 +176,9 @@ export default function PrivacySettings() {
             <Pressable
               key={level}
               onPress={() => {
+                const prev = privacyLevel;
                 setPrivacyLevel(level);
-                savePref('privacy_level', level);
+                savePref('privacy_level', level, () => setPrivacyLevel(prev));
               }}
               style={{
                 flexDirection: 'row',

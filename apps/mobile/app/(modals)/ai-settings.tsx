@@ -53,13 +53,15 @@ export default function AISettingsModal() {
   }, [userId]);
 
   const savePref = useCallback(
-    async (key: string, value: boolean) => {
+    async (key: string, value: boolean, revert: () => void) => {
       if (!userId) return;
       const { error: saveError } = await supabase
         .from('user_preferences')
         .upsert({ user_id: userId, key, value: String(value) }, { onConflict: 'user_id,key' });
       if (saveError) {
         console.error('[AISettings] Failed to save preference', key, saveError.message);
+        revert();
+        Alert.alert('Error', 'Could not save preference. Please try again.');
       }
     },
     [userId],
@@ -125,7 +127,7 @@ export default function AISettingsModal() {
             value={planSuggestions}
             onValueChange={(v) => {
               setPlanSuggestions(v);
-              savePref('ai_plan_suggestions', v);
+              savePref('ai_plan_suggestions', v, () => setPlanSuggestions(!v));
             }}
           />
           <ToggleRow
@@ -134,7 +136,7 @@ export default function AISettingsModal() {
             value={messageDrafts}
             onValueChange={(v) => {
               setMessageDrafts(v);
-              savePref('ai_message_drafts', v);
+              savePref('ai_message_drafts', v, () => setMessageDrafts(!v));
             }}
           />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -167,7 +169,7 @@ export default function AISettingsModal() {
                   return;
                 }
                 setAutoReply(v);
-                savePref('ai_auto_reply', v);
+                savePref('ai_auto_reply', v, () => setAutoReply(!v));
               }}
               trackColor={{ false: theme.border, true: theme.accent }}
               thumbColor={theme.background}
