@@ -59,29 +59,20 @@ export default function ReportScreen() {
       });
 
       if (error) {
-        try {
-          await eventsService.trackEvent(
-            userId,
-            reportEventType,
-            {
-              content_type: contentType,
-              content_id: contentId,
-              reported_user_id: reportedUserId || null,
-              reason: selectedReason,
-              details: details.trim() || null,
-              fallback: 'reports_table_missing',
-            },
-            'moderation',
-          );
-        } catch {
-          throw error;
-        }
-      }
-
-      if (error) {
-        // Primary insert failed and fallback tracking also failed — re-thrown above.
-        // If we reach here, the fallback tracking succeeded but the report was NOT stored.
-        // Do not show "submitted" — surface the error instead.
+        // Primary insert failed — attempt analytics fallback so the report isn't lost entirely
+        await eventsService.trackEvent(
+          userId,
+          reportEventType,
+          {
+            content_type: contentType,
+            content_id: contentId,
+            reported_user_id: reportedUserId || null,
+            reason: selectedReason,
+            details: details.trim() || null,
+            fallback: 'reports_table_missing',
+          },
+          'moderation',
+        ).catch(() => {/* fallback also failed — original error will surface below */});
         throw error;
       }
 
