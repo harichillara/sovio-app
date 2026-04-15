@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-function getSupabase() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
-}
+import { getSupabaseBrowserClient } from '../../../lib/supabase';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -22,7 +15,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const supabase = getSupabase();
+      const supabase = getSupabaseBrowserClient();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -42,7 +35,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleAuth = async () => {
-    const supabase = getSupabase();
+    const supabase = getSupabaseBrowserClient();
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/account` },

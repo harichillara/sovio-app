@@ -114,6 +114,7 @@ export function useMarkThreadRead() {
  */
 export function useRealtimeMessages(threadId: string | null) {
   const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -133,6 +134,9 @@ export function useRealtimeMessages(threadId: string | null) {
           queryClient.invalidateQueries({
             queryKey: queryKeys.messages(threadId),
           });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.threads(userId ?? ''),
+          });
         },
       )
       .subscribe();
@@ -140,8 +144,8 @@ export function useRealtimeMessages(threadId: string | null) {
     channelRef.current = channel;
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [threadId, queryClient]);
+  }, [threadId, queryClient, userId]);
 }

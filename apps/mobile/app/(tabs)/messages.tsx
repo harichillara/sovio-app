@@ -1,15 +1,24 @@
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, Alert, FlatList, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  Alert,
+  FlatList,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
-import { AppScreen, AppHeader, EmptyState } from '@sovio/ui';
-import { useThreads, useAuthStore } from '@sovio/core';
+import { AppScreen, AppHeader, EmptyState, withAlpha } from '@sovio/ui';
+import { useThreads, useIsPro } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
+import { TopRightActions } from '../../components/TopRightActions';
 
 export default function MessagesTab() {
   const { theme } = useTheme();
   const { data: threads, isLoading, refetch } = useThreads();
-  const tier = useAuthStore((s) => s.profile?.subscription_tier ?? 'free');
+  const isPro = useIsPro();
 
   const threadList = threads ?? [];
 
@@ -122,8 +131,8 @@ export default function MessagesTab() {
             </Text>
           </View>
 
-          {/* Auto-reply indicator */}
-          {tier === 'pro' && (
+          {/* Auto-reply indicator — only show when entry has the flag */}
+          {isPro && entry.auto_reply_enabled && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
               <Ionicons name="flash-outline" size={10} color={theme.muted} />
               <Text style={{ color: theme.muted, fontSize: 10 }}>Auto-reply</Text>
@@ -155,7 +164,11 @@ export default function MessagesTab() {
 
   return (
     <AppScreen>
-      <AppHeader title="Messages" subtitle="Reply faster without overthinking it" />
+      <AppHeader
+        title="Messages"
+        subtitle="Reply faster without overthinking it"
+        rightSlot={<TopRightActions />}
+      />
 
       {isLoading && (
         <View style={{ paddingVertical: 24, alignItems: 'center' }}>
@@ -197,13 +210,19 @@ export default function MessagesTab() {
           height: 56,
           borderRadius: 28,
           backgroundColor: theme.accent,
+          borderColor: theme.border,
+          borderWidth: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          elevation: 4,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 4,
+          ...(Platform.OS === 'web'
+            ? { boxShadow: `0px 12px 28px ${withAlpha(theme.text, 0.18)}` }
+            : {
+                elevation: 4,
+                shadowColor: theme.text,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 4,
+              }),
         }}
       >
         <Ionicons name="add" size={28} color={theme.background} />

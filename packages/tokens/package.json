@@ -9,7 +9,10 @@
     "./css": "./src/css.ts",
     "./ThemeContext": "./src/ThemeContext.tsx"
   },
-  "dependencies": {
-    "react": "*"
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
   }
 }

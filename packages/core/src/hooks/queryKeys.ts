@@ -17,8 +17,11 @@ export const queryKeys = {
   presenceHistory: (userId: string, days: number) =>
     ['presence-history', userId, days] as const,
   momentum: (userId: string) => ['momentum', userId] as const,
+  nearbyFriends: (userId: string, bucket?: string) =>
+    ['nearby-friends', userId, bucket] as const,
   entitlements: (userId: string) => ['entitlements', userId] as const,
   events: (userId: string) => ['events', userId] as const,
+  notifications: (userId: string) => ['notifications', userId] as const,
   insights: (userId: string, weekOf?: string) =>
     ['insights', userId, weekOf] as const,
 };

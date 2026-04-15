@@ -4,7 +4,6 @@ import { supabase } from '../supabase/client';
 import { useAuthStore } from '../stores/auth.store';
 import { queryKeys } from '../hooks/queryKeys';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import type { Message } from '../supabase/types';
 
 interface RealtimeProviderProps {
   children: React.ReactNode;
@@ -22,32 +21,31 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
 
   useEffect(() => {
     if (!userId) {
-      // Unsubscribe if we log out
+      // Clean up if we log out
       if (channelRef.current) {
-        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
       return;
     }
 
+    // Only subscribe to user-scoped notifications.
+    // Per-thread message realtime is handled by useRealtimeMessages in thread-detail.
     const channel = supabase
-      .channel('global-messages')
+      .channel('global-realtime')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'messages',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
-          const newMessage = payload.new as Message;
-
-          // Invalidate the specific thread messages query
+        () => {
           queryClient.invalidateQueries({
-            queryKey: queryKeys.messages(newMessage.thread_id),
+            queryKey: queryKeys.notifications(userId),
           });
-
-          // Invalidate threads list so unread counts refresh
+          // Also refresh threads list so unread badges update
           queryClient.invalidateQueries({
             queryKey: queryKeys.threads(userId),
           });
@@ -58,7 +56,7 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
     channelRef.current = channel;
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
       channelRef.current = null;
     };
   }, [userId, queryClient]);

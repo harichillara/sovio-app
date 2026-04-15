@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-function getSupabase() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
-}
+import { getSupabaseBrowserClient } from '../../../lib/supabase';
 
 interface ToggleProps {
   label: string;
@@ -97,7 +90,7 @@ export default function PrivacySettingsPage() {
 
   useEffect(() => {
     (async () => {
-      const supabase = getSupabase();
+      const supabase = getSupabaseBrowserClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -129,10 +122,13 @@ export default function PrivacySettingsPage() {
 
   const savePref = async (key: string, value: boolean) => {
     if (!userId) return;
-    const supabase = getSupabase();
-    await supabase
+    const supabase = getSupabaseBrowserClient();
+    const { error: saveError } = await supabase
       .from('user_preferences')
       .upsert({ user_id: userId, key, value: String(value) }, { onConflict: 'user_id,key' });
+    if (saveError) {
+      console.error('[WebPrivacy] Failed to save preference', key, saveError.message);
+    }
   };
 
   const handleExportData = () => {

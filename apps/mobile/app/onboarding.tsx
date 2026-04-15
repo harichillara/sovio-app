@@ -7,6 +7,7 @@ import {
   interestOptions,
   socialPreferenceOptions,
   useAuthStore,
+  useLocationStore,
   useUpdateProfile,
   supabase,
   notificationsService,
@@ -25,6 +26,8 @@ export default function OnboardingScreen() {
 
   const userId = useAuthStore((s) => s.user?.id);
   const setProfile = useAuthStore((s) => s.setProfile);
+  const setCurrentCoords = useLocationStore((s) => s.setCurrentCoords);
+  const setPermissionStatus = useLocationStore((s) => s.setPermissionStatus);
   const updateProfileMutation = useUpdateProfile();
 
   const toggleInterest = useCallback((item: string) => {
@@ -91,8 +94,20 @@ export default function OnboardingScreen() {
           }
           break;
         case 5:
-          // Request location permission
-          await locationService.requestPermission();
+          // Request location permission and persist a first snapshot so
+          // Intent Cloud can work immediately after onboarding.
+          {
+            const status = await locationService.requestPermission();
+            setPermissionStatus(status);
+            if (status === 'granted' && userId) {
+              const location = await locationService.getCurrentLocation();
+              setCurrentCoords({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              });
+              await locationService.captureLocationSnapshot(userId, location);
+            }
+          }
           break;
       }
       setStep((s) => s + 1);
@@ -103,7 +118,16 @@ export default function OnboardingScreen() {
     } finally {
       setSaving(false);
     }
-  }, [step, selectedInterests, selectedPreferences, userId, upsertInterests, upsertPreference]);
+  }, [
+    step,
+    selectedInterests,
+    selectedPreferences,
+    userId,
+    upsertInterests,
+    upsertPreference,
+    setCurrentCoords,
+    setPermissionStatus,
+  ]);
 
   const handleEnableAI = useCallback(async () => {
     setSaving(true);

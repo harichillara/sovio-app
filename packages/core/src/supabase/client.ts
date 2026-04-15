@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import type { Database } from './database.types';
 
@@ -21,11 +22,59 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
+const WebStorageAdapter = {
+  getItem: async (key: string): Promise<string | null> => {
+    const globalStorage = globalThis as typeof globalThis & {
+      localStorage?: {
+        getItem(key: string): string | null;
+        setItem(key: string, value: string): void;
+        removeItem(key: string): void;
+      };
+    };
+    const storage =
+      typeof globalThis !== 'undefined' ? globalStorage.localStorage : undefined;
+    if (!storage) return null;
+    return storage.getItem(key);
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    const globalStorage = globalThis as typeof globalThis & {
+      localStorage?: {
+        getItem(key: string): string | null;
+        setItem(key: string, value: string): void;
+        removeItem(key: string): void;
+      };
+    };
+    const storage =
+      typeof globalThis !== 'undefined' ? globalStorage.localStorage : undefined;
+    if (!storage) return;
+    storage.setItem(key, value);
+  },
+  removeItem: async (key: string): Promise<void> => {
+    const globalStorage = globalThis as typeof globalThis & {
+      localStorage?: {
+        getItem(key: string): string | null;
+        setItem(key: string, value: string): void;
+        removeItem(key: string): void;
+      };
+    };
+    const storage =
+      typeof globalThis !== 'undefined' ? globalStorage.localStorage : undefined;
+    if (!storage) return;
+    storage.removeItem(key);
+  },
+};
+
+const authStorage =
+  Platform.OS === 'web' ? WebStorageAdapter : ExpoSecureStoreAdapter;
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: ExpoSecureStoreAdapter,
+    storage: authStorage,
     autoRefreshToken: true,
     persistSession: true,
+    // Keep PKCE callback exchange owned by app code. On web the dedicated
+    // /callback route performs the exchange after the Supabase client has
+    // initialized; on native the deep-link handler does the same.
     detectSessionInUrl: false,
     flowType: 'pkce',
   },

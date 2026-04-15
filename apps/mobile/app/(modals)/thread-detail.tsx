@@ -20,6 +20,7 @@ import {
   useMarkThreadRead,
   useAuthStore,
   useAIStore,
+  useIsPro,
   supabase,
 } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +29,8 @@ export default function ThreadDetailModal() {
   const { theme } = useTheme();
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
   const userId = useAuthStore((s) => s.user?.id);
-  const tier = useAuthStore((s) => s.profile?.subscription_tier ?? 'free');
+  const isPro = useIsPro();
+  const tier = isPro ? 'pro' : 'free';
   const [input, setInput] = useState('');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
   const [showingToast, setShowingToast] = useState(false);
@@ -48,7 +50,7 @@ export default function ThreadDetailModal() {
     if (threadId && userId) {
       markReadMutation.mutate({ threadId });
     }
-  }, [threadId]);
+  }, [threadId, userId]);
 
   const allMessages = messagesQuery.data?.pages?.flat() ?? [];
   const lastMessage = allMessages.length > 0 ? allMessages[0] : null;

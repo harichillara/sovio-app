@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Switch, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
-import { AppScreen, Button, LoadingOverlay } from '@sovio/ui';
-import { useAuthStore, supabase } from '@sovio/core';
+import { AppScreen, Button, LoadingOverlay, ToggleRow } from '@sovio/ui';
+import { useAuthStore, useIsPro, supabase, eventsService } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
 
 type PrivacyLevel = 'private' | 'friends' | 'public';
@@ -11,7 +11,8 @@ type PrivacyLevel = 'private' | 'friends' | 'public';
 export default function PrivacySettings() {
   const { theme } = useTheme();
   const userId = useAuthStore((s) => s.user?.id);
-  const tier = useAuthStore((s) => s.profile?.subscription_tier ?? 'free');
+  const isPro = useIsPro();
+  const tier = isPro ? 'pro' : 'free';
 
   const [loading, setLoading] = useState(true);
   const [sharePresence, setSharePresence] = useState(true);
@@ -24,7 +25,7 @@ export default function PrivacySettings() {
     if (!userId) return;
     (async () => {
       try {
-        const { data } = await supabase
+        const { data, error: prefsError } = await supabase
           .from('user_preferences')
           .select('key, value')
           .eq('user_id', userId)
@@ -34,6 +35,10 @@ export default function PrivacySettings() {
             'privacy_auto_reply',
             'privacy_level',
           ]);
+
+        if (prefsError) {
+          console.error('[PrivacySettings] Failed to load privacy preferences.', prefsError.message);
+        }
 
         if (data) {
           for (const p of data) {
@@ -53,9 +58,12 @@ export default function PrivacySettings() {
   const savePref = useCallback(
     async (key: string, value: string) => {
       if (!userId) return;
-      await supabase
+      const { error: saveError } = await supabase
         .from('user_preferences')
         .upsert({ user_id: userId, key, value }, { onConflict: 'user_id,key' });
+      if (saveError) {
+        console.error('[PrivacySettings] Failed to save preference', key, saveError.message);
+      }
     },
     [userId],
   );
@@ -80,11 +88,12 @@ export default function PrivacySettings() {
           onPress: async () => {
             if (!userId) return;
             // Track the event, actual deletion handled server-side
-            await supabase.from('analytics_events').insert({
-              user_id: userId,
-              event: 'account_deletion_requested',
-              metadata: {},
-            });
+            await eventsService.trackEvent(
+              userId,
+              eventsService.EventTypes.ACCOUNT_DELETION_REQUESTED,
+              {},
+              'privacy',
+            );
             Alert.alert(
               'Account Deletion Requested',
               'Your account will be deleted within 30 days. You will receive a confirmation email.',
@@ -129,7 +138,6 @@ export default function PrivacySettings() {
               setSharePresence(v);
               savePref('privacy_share_presence', String(v));
             }}
-            theme={theme}
           />
 
           <ToggleRow
@@ -140,7 +148,6 @@ export default function PrivacySettings() {
               setAllowAILearn(v);
               savePref('privacy_ai_learn', String(v));
             }}
-            theme={theme}
           />
 
           <ToggleRow
@@ -152,7 +159,6 @@ export default function PrivacySettings() {
               setAllowAutoReply(v);
               savePref('privacy_auto_reply', String(v));
             }}
-            theme={theme}
             disabled={tier !== 'pro'}
           />
         </View>
@@ -235,42 +241,3 @@ export default function PrivacySettings() {
   );
 }
 
-function ToggleRow({
-  label,
-  description,
-  value,
-  onValueChange,
-  theme,
-  disabled,
-}: {
-  label: string;
-  description: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-  theme: any;
-  disabled?: boolean;
-}) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            color: disabled ? theme.muted : theme.text,
-            fontSize: 15,
-            fontWeight: '600',
-          }}
-        >
-          {label}
-        </Text>
-        <Text style={{ color: theme.muted, fontSize: 13 }}>{description}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: theme.border, true: theme.accent }}
-        thumbColor="#FFF"
-        disabled={disabled}
-      />
-    </View>
-  );
-}

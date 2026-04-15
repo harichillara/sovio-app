@@ -127,8 +127,14 @@ export class GeminiClient implements LLMClient {
         flagged: parsed.flagged ?? false,
         categories: parsed.categories ?? {},
       };
-    } catch {
-      // If classification fails, err on the side of caution
+    } catch (err) {
+      // If classification fails, err on the side of caution but log the issue
+      // so moderation outages do not go unnoticed.
+      console.error(
+        '[GeminiClient.moderate] Content moderation failed — defaulting to unflagged. ' +
+        'This may allow unsafe content through.',
+        err instanceof Error ? err.message : err,
+      );
       return {
         flagged: false,
         categories: {},

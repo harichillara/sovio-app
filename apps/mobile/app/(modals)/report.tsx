@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, Button } from '@sovio/ui';
 import { TextInput as RNTextInput } from 'react-native';
-import { useAuthStore, supabase } from '@sovio/core';
+import { useAuthStore, supabase, eventsService } from '@sovio/core';
 
 const REPORT_REASONS = [
   'Spam or scam',
@@ -33,6 +33,10 @@ export default function ReportScreen() {
   const [details, setDetails] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const reportEventType =
+    contentType === 'message'
+      ? eventsService.EventTypes.MESSAGE_REPORTED
+      : eventsService.EventTypes.USER_REPORTED;
 
   const handleSubmit = useCallback(async () => {
     if (!selectedReason) {
@@ -55,30 +59,43 @@ export default function ReportScreen() {
       });
 
       if (error) {
-        // If reports table doesn't exist, track via analytics
-        await supabase.from('analytics_events').insert({
-          user_id: userId,
-          event: contentType === 'message' ? 'message_reported' : 'user_reported',
-          metadata: {
-            content_type: contentType,
-            content_id: contentId,
-            reported_user_id: reportedUserId,
-            reason: selectedReason,
-            details: details.trim(),
-          },
-        });
+        try {
+          await eventsService.trackEvent(
+            userId,
+            reportEventType,
+            {
+              content_type: contentType,
+              content_id: contentId,
+              reported_user_id: reportedUserId || null,
+              reason: selectedReason,
+              details: details.trim() || null,
+              fallback: 'reports_table_missing',
+            },
+            'moderation',
+          );
+        } catch {
+          throw error;
+        }
       }
 
-      // Also track the event
-      await supabase.from('analytics_events').insert({
-        user_id: userId,
-        event: contentType === 'message' ? 'message_reported' : 'user_reported',
-        metadata: {
+      if (error) {
+        // Primary insert failed and fallback tracking also failed — re-thrown above.
+        // If we reach here, the fallback tracking succeeded but the report was NOT stored.
+        // Do not show "submitted" — surface the error instead.
+        throw error;
+      }
+
+      await eventsService.trackEvent(
+        userId,
+        reportEventType,
+        {
           content_type: contentType,
           content_id: contentId,
+          reported_user_id: reportedUserId || null,
           reason: selectedReason,
         },
-      }).then(() => {});
+        'moderation',
+      ).catch((e) => console.warn('analytics:', e));
 
       setSubmitted(true);
     } catch (err) {
@@ -86,7 +103,7 @@ export default function ReportScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedReason, details, userId, contentType, contentId, reportedUserId]);
+  }, [selectedReason, details, userId, contentType, contentId, reportedUserId, reportEventType]);
 
   if (submitted) {
     return (

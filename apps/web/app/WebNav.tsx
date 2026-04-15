@@ -2,14 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-function getSupabase() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
-}
+import { getSupabaseBrowserClient } from '../lib/supabase';
 
 export function WebNav() {
   const [isAuth, setIsAuth] = useState(false);
@@ -18,7 +11,7 @@ export function WebNav() {
   useEffect(() => {
     (async () => {
       try {
-        const supabase = getSupabase();
+        const supabase = getSupabaseBrowserClient();
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -33,7 +26,7 @@ export function WebNav() {
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
-    const supabase = getSupabase();
+    const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
     window.location.href = '/';
   };

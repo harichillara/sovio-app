@@ -1,7 +1,9 @@
 import { supabase } from '../supabase/client';
 import type { AITokenUsage, Profile, UserInterest } from '../supabase/types';
-
-const FREE_TIER_LIMIT = 100;
+import {
+  checkQuota,
+  incrementUsage,
+} from './entitlements.service';
 
 export async function getTokenUsage(userId: string): Promise<AITokenUsage | null> {
   const now = new Date();
@@ -27,50 +29,52 @@ export async function checkCanUseAI(userId: string): Promise<{
   tokensUsed: number;
   tokensLimit: number;
 }> {
-  // Get the user's subscription tier
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('subscription_tier')
-    .eq('id', userId)
-    .single();
-
-  if (profileError) throw profileError;
-
-  const isPro = profile.subscription_tier === 'pro';
-  const limit = isPro ? Infinity : FREE_TIER_LIMIT;
-
-  const usage = await getTokenUsage(userId);
-  const tokensUsed = usage?.tokens_used ?? 0;
+  const quota = await checkQuota(userId);
 
   return {
-    allowed: isPro || tokensUsed < limit,
-    tokensUsed,
-    tokensLimit: limit,
+    allowed: quota.allowed,
+    tokensUsed: quota.used,
+    tokensLimit: quota.limit,
   };
 }
 
 export async function incrementTokens(userId: string, count: number): Promise<void> {
-  const now = new Date();
-  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+  await incrementUsage(userId, count);
 
-  const existing = await getTokenUsage(userId);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+    const existing = await getTokenUsage(userId);
 
-  if (existing) {
-    const { error } = await supabase
-      .from('ai_token_usage')
-      .update({ tokens_used: existing.tokens_used + count })
-      .eq('id', existing.id);
-    if (error) throw error;
-  } else {
+    if (existing) {
+      const { data, error } = await supabase
+        .from('ai_token_usage')
+        .update({ tokens_used: existing.tokens_used + count })
+        .eq('id', existing.id)
+        .eq('tokens_used', existing.tokens_used)
+        .select('id')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) return;
+      continue;
+    }
+
     const { error } = await supabase.from('ai_token_usage').insert({
       user_id: userId,
       tokens_used: count,
       period_start: periodStart,
       period_end: periodEnd,
     });
-    if (error) throw error;
+
+    if (!error) return;
+    if (error.code !== '23505') {
+      throw error;
+    }
   }
+
+  throw new Error('Could not update AI usage. Please try again.');
 }
 
 export function buildAIContext(

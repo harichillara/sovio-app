@@ -13,6 +13,8 @@ export type AITokenUsage = Database['public']['Tables']['ai_token_usage']['Row']
 export type MissedMoment = Database['public']['Tables']['missed_moments']['Row'];
 export type Friendship = Database['public']['Tables']['friendships']['Row'];
 export type PushToken = Database['public']['Tables']['push_tokens']['Row'];
+export type LocationSnapshot = Database['public']['Tables']['location_snapshots']['Row'];
+export type IntentCandidate = Database['public']['Tables']['intent_candidates']['Row'];
 
 // Insert types (create)
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
@@ -27,6 +29,8 @@ export type AITokenUsageInsert = Database['public']['Tables']['ai_token_usage'][
 export type MissedMomentInsert = Database['public']['Tables']['missed_moments']['Insert'];
 export type FriendshipInsert = Database['public']['Tables']['friendships']['Insert'];
 export type PushTokenInsert = Database['public']['Tables']['push_tokens']['Insert'];
+export type LocationSnapshotInsert = Database['public']['Tables']['location_snapshots']['Insert'];
+export type IntentCandidateInsert = Database['public']['Tables']['intent_candidates']['Insert'];
 
 // Update types (patch)
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
@@ -41,6 +45,8 @@ export type AITokenUsageUpdate = Database['public']['Tables']['ai_token_usage'][
 export type MissedMomentUpdate = Database['public']['Tables']['missed_moments']['Update'];
 export type FriendshipUpdate = Database['public']['Tables']['friendships']['Update'];
 export type PushTokenUpdate = Database['public']['Tables']['push_tokens']['Update'];
+export type LocationSnapshotUpdate = Database['public']['Tables']['location_snapshots']['Update'];
+export type IntentCandidateUpdate = Database['public']['Tables']['intent_candidates']['Update'];
 
 // Re-export the Database type itself
 export type { Database };

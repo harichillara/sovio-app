@@ -3,9 +3,13 @@ import { View, Text, Pressable, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, TextInput, Button, SocialAuthButton, LoadingOverlay } from '@sovio/ui';
-import { useSignIn, useSignInWithGoogle, useSignInWithApple } from '@sovio/core';
+import {
+  authService,
+  useSignIn,
+  useSignInWithGoogle,
+  useSignInWithApple,
+} from '@sovio/core';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 
@@ -15,43 +19,68 @@ export default function LoginScreen() {
   const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   const signInMutation = useSignIn();
   const googleMutation = useSignInWithGoogle();
   const appleMutation = useSignInWithApple();
 
   const isLoading = signInMutation.isPending || googleMutation.isPending || appleMutation.isPending;
-  const error = signInMutation.error?.message || googleMutation.error?.message || appleMutation.error?.message;
+  const error =
+    signInMutation.error?.message ||
+    googleMutation.error?.message ||
+    appleMutation.error?.message ||
+    oauthError;
 
   const handleSignIn = () => {
     if (!email || !password) return;
+    setOauthError(null);
     signInMutation.mutate({ email, password });
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      // In production, use Google OAuth flow and pass idToken
-      // For now, this is a placeholder that will be wired to expo-auth-session
-      console.log('Google sign-in flow');
+      setOauthError(null);
+      const redirectTo = authService.getGoogleOAuthRedirectUrl();
+
+      const data = await googleMutation.mutateAsync({ redirectTo });
+
+      if (Platform.OS === 'web') {
+        // Supabase owns the browser redirect on web so PKCE state is stored
+        // in the expected place before navigating away.
+        return;
+      }
+
+      if (!data?.url) {
+        throw new Error('Google sign-in is unavailable right now.');
+      }
+
+      // On native, open the browser. The AuthProvider's Linking listener
+      // handles the callback — don't also call completeOAuthFromUrl here
+      // to avoid a race on the single-use authorization code.
+      await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     } catch (e) {
       console.error(e);
+      setOauthError(e instanceof Error ? e.message : 'Google sign-in failed.');
     }
   };
 
   const handleAppleSignIn = async () => {
     try {
-      const nonce = await Crypto.digestStringAsync(
+      const rawNonce = Crypto.getRandomBytes(32).reduce((s: string, b: number) => s + b.toString(16).padStart(2, '0'), '')
+      const hashedNonce = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
-        Math.random().toString(36)
+        rawNonce,
       );
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
       if (credential.identityToken) {
-        appleMutation.mutate({ identityToken: credential.identityToken, nonce });
+        appleMutation.mutate({ identityToken: credential.identityToken, nonce: rawNonce });
       }
     } catch (e) {
       console.error(e);

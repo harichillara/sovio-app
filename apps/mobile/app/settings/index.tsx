@@ -27,9 +27,9 @@ const MENU_ITEMS = [
   },
   {
     title: 'Notifications',
-    body: 'Push alerts, reminders, and quiet hours',
-    label: 'Configure',
-    route: '/settings/privacy', // placeholder route since no dedicated notification screen
+    body: 'Push alerts, reminders, and your activity inbox',
+    label: 'Open',
+    route: '/settings/notifications',
   },
   {
     title: 'Subscription',
@@ -41,7 +41,7 @@ const MENU_ITEMS = [
     title: 'Presence Score',
     body: 'Your real-world momentum this month',
     label: 'View',
-    route: '/(modals)/subscription', // placeholder
+    route: '/(modals)/presence-score',
   },
   {
     title: 'Support & Contact',

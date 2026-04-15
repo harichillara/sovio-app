@@ -9,6 +9,7 @@ export const EventTypes = {
   SUGGESTION_VIEWED: 'suggestion_viewed',
   SUGGESTION_ACCEPTED: 'suggestion_accepted',
   SUGGESTION_DISMISSED: 'suggestion_dismissed',
+  SUGGESTION_REFRESHED: 'suggestion_refreshed',
   MOMENTUM_AVAILABLE_TOGGLED: 'momentum_available_toggled',
   MATCH_CREATED: 'match_created',
   MESSAGE_SENT: 'message_sent',
@@ -21,6 +22,15 @@ export const EventTypes = {
   PRESENCE_SCORE_VIEWED: 'presence_score_viewed',
   WEEKLY_INSIGHT_VIEWED: 'weekly_insight_viewed',
   EXPERIMENT_COMPLETED: 'experiment_completed',
+  AUTOPILOT_APPROVED: 'autopilot_approved',
+  AUTOPILOT_REJECTED: 'autopilot_rejected',
+  BILLING_INTEREST_REQUESTED: 'billing_interest_requested',
+  BILLING_CANCELLATION_REQUESTED: 'billing_cancellation_requested',
+  ACCOUNT_DELETION_REQUESTED: 'account_deletion_requested',
+  MESSAGE_REPORTED: 'message_reported',
+  USER_REPORTED: 'user_reported',
+  NOTIFICATION_READ: 'notification_read',
+  NOTIFICATION_TAPPED: 'notification_tapped',
 } as const;
 
 export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
@@ -47,7 +57,7 @@ export interface AppEvent {
  */
 export async function trackEvent(
   userId: string,
-  eventType: EventType | string,
+  eventType: EventType,
   payload?: Json,
   source?: string,
 ): Promise<void> {

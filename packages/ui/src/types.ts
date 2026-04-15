@@ -172,3 +172,11 @@ export interface QuotaMeterProps {
   limit: number;
   label?: string;
 }
+
+export interface ToggleRowProps {
+  label: string;
+  description: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+  disabled?: boolean;
+}

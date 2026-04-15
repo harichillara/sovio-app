@@ -6,7 +6,40 @@ export interface ThreadWithMeta extends Thread {
   unread_count?: number;
 }
 
-export async function getThreads(userId: string): Promise<ThreadWithMeta[]> {
+interface ThreadSummaryRow {
+  thread_id: string;
+  plan_id: string | null;
+  title: string;
+  thread_created_at: string;
+  latest_message_id: string | null;
+  latest_message_sender_id: string | null;
+  latest_message_content: string | null;
+  latest_message_is_ai_draft: boolean | null;
+  latest_message_created_at: string | null;
+  unread_count: number;
+}
+
+function mapThreadSummary(row: ThreadSummaryRow): ThreadWithMeta {
+  return {
+    id: row.thread_id,
+    plan_id: row.plan_id,
+    title: row.title,
+    created_at: row.thread_created_at,
+    latest_message: row.latest_message_id
+      ? {
+          id: row.latest_message_id,
+          thread_id: row.thread_id,
+          sender_id: row.latest_message_sender_id ?? '',
+          content: row.latest_message_content ?? '',
+          is_ai_draft: row.latest_message_is_ai_draft ?? false,
+          created_at: row.latest_message_created_at ?? row.thread_created_at,
+        }
+      : null,
+    unread_count: Number(row.unread_count ?? 0),
+  };
+}
+
+async function getThreadsFallback(userId: string): Promise<ThreadWithMeta[]> {
   // Get threads where user is a participant
   const { data: participantRows, error: pError } = await supabase
     .from('thread_participants')
@@ -30,40 +63,55 @@ export async function getThreads(userId: string): Promise<ThreadWithMeta[]> {
 
   if (tError) throw tError;
 
-  // For each thread, get the latest message and unread count
-  const enriched: ThreadWithMeta[] = await Promise.all(
-    (threads ?? []).map(async (thread) => {
-      const lastRead = lastReadMap.get(thread.id);
+  const { data: messages, error: messagesError } = await supabase
+    .from('messages')
+    .select('*')
+    .in('thread_id', threadIds)
+    .order('created_at', { ascending: false });
 
-      // Latest message
-      const { data: msgs } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('thread_id', thread.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
+  if (messagesError) throw messagesError;
 
-      // Unread count
-      let unreadQuery = supabase
-        .from('messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('thread_id', thread.id);
+  const latestMessages = new Map<string, Message>();
+  const unreadCounts = new Map<string, number>();
 
-      if (lastRead) {
-        unreadQuery = unreadQuery.gt('created_at', lastRead);
-      }
+  for (const message of messages ?? []) {
+    if (!latestMessages.has(message.thread_id)) {
+      latestMessages.set(message.thread_id, message);
+    }
 
-      const { count } = await unreadQuery;
+    const lastReadAt = lastReadMap.get(message.thread_id);
+    const isUnread = !lastReadAt || new Date(message.created_at) > new Date(lastReadAt);
 
-      return {
-        ...thread,
-        latest_message: msgs?.[0] ?? null,
-        unread_count: count ?? 0,
-      };
-    }),
-  );
+    if (isUnread) {
+      unreadCounts.set(message.thread_id, (unreadCounts.get(message.thread_id) ?? 0) + 1);
+    }
+  }
 
-  return enriched;
+  return (threads ?? [])
+    .map((thread) => ({
+      ...thread,
+      latest_message: latestMessages.get(thread.id) ?? null,
+      unread_count: unreadCounts.get(thread.id) ?? 0,
+    }))
+    .sort((a, b) => {
+      const aTimestamp = a.latest_message?.created_at ?? a.created_at;
+      const bTimestamp = b.latest_message?.created_at ?? b.created_at;
+      return new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime();
+    });
+}
+
+export async function getThreads(userId: string): Promise<ThreadWithMeta[]> {
+  const { data, error } = await supabase.rpc('get_thread_summaries');
+
+  if (!error && data) {
+    return (data as ThreadSummaryRow[]).map(mapThreadSummary);
+  }
+
+  if (error) {
+    console.warn('Falling back to client thread summary query', error.message);
+  }
+
+  return getThreadsFallback(userId);
 }
 
 export async function getMessages(threadId: string, cursor?: string) {

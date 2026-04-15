@@ -1,4 +1,5 @@
 import { supabase } from '../supabase/client';
+import { EventTypes, trackEvent } from './events.service';
 
 export interface AutopilotRule {
   id: string;
@@ -72,50 +73,58 @@ export async function getProposals(userId: string): Promise<AIProposal[]> {
 
 /**
  * Approve an AI proposal. Updates status and tracks event.
+ *
+ * SECURITY: Both jobId AND userId are required in the WHERE clause
+ * to prevent one user from mutating another user's proposals.
+ * Even with RLS, this defense-in-depth ensures ownership at the app layer.
  */
 export async function approveProposal(
   jobId: string,
   userId: string,
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('ai_jobs')
     .update({ status: 'approved' })
-    .eq('id', jobId);
+    .eq('id', jobId)
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle();
 
   if (error) throw error;
+  if (!data) throw new Error('Proposal not found or not owned by user');
 
-  // Track the event
-  await supabase
-    .from('analytics_events')
-    .insert({
-      user_id: userId,
-      event: 'proposal_approved',
-      metadata: { job_id: jobId },
-    })
-    .then(() => {});
+  try {
+    await trackEvent(userId, EventTypes.AUTOPILOT_APPROVED, { job_id: jobId }, 'autopilot');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn('Could not track autopilot approval', message);
+  }
 }
 
 /**
  * Reject an AI proposal. Updates status and tracks event.
+ *
+ * SECURITY: Both jobId AND userId are required in the WHERE clause.
  */
 export async function rejectProposal(
   jobId: string,
   userId: string,
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('ai_jobs')
     .update({ status: 'rejected' })
-    .eq('id', jobId);
+    .eq('id', jobId)
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle();
 
   if (error) throw error;
+  if (!data) throw new Error('Proposal not found or not owned by user');
 
-  // Track the event
-  await supabase
-    .from('analytics_events')
-    .insert({
-      user_id: userId,
-      event: 'proposal_rejected',
-      metadata: { job_id: jobId },
-    })
-    .then(() => {});
+  try {
+    await trackEvent(userId, EventTypes.AUTOPILOT_REJECTED, { job_id: jobId }, 'autopilot');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn('Could not track autopilot rejection', message);
+  }
 }

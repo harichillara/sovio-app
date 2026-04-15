@@ -55,12 +55,16 @@ export default function DecisionAutopilotScreen() {
         case 'autopilot_preferred_times':
           try {
             setSelectedTimes(JSON.parse(rule.value));
-          } catch {}
+          } catch (err) {
+            console.warn('[DecisionAutopilot] Failed to parse preferred_times rule — using default. Value:', rule.value, err);
+          }
           break;
         case 'autopilot_group_size':
           try {
             setSelectedGroup(JSON.parse(rule.value));
-          } catch {}
+          } catch (err) {
+            console.warn('[DecisionAutopilot] Failed to parse group_size rule — using default. Value:', rule.value, err);
+          }
           break;
       }
     }
@@ -139,6 +143,15 @@ export default function DecisionAutopilotScreen() {
 
         {/* YOUR RULES */}
         <View style={{ gap: 14 }}>
+          <View style={{ backgroundColor: theme.surface, borderRadius: 16, padding: 14, gap: 6 }}>
+            <Text style={{ color: theme.text, fontSize: 15, fontWeight: '700' }}>
+              You stay in control
+            </Text>
+            <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>
+              Autopilot drafts decisions from your rules, but every proposal still waits for your approval before anything meaningful changes.
+            </Text>
+          </View>
+
           <Text
             style={{
               color: theme.accent,

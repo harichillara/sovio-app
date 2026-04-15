@@ -90,12 +90,16 @@ export async function blockUser(
       .limit(1);
 
     if (!existing?.length) {
-      await supabase.from('friendships').insert({
+      const { error: insertError } = await supabase.from('friendships').insert({
         user_id: userId,
         friend_id: targetId,
         status: 'blocked',
         blocked_by: userId,
       });
+      if (insertError) {
+        console.error('[blockUser] Failed to insert blocked friendship record.', insertError.message);
+        throw insertError;
+      }
     }
   }
 }

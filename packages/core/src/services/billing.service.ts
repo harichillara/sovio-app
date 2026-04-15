@@ -1,55 +1,162 @@
 import { supabase } from '../supabase/client';
+import { getEntitlement } from './entitlements.service';
+import { EventTypes, trackEvent, type EventType } from './events.service';
+
+type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing';
+type BillingMode = 'checkout' | 'staged' | 'already-active';
 
 export interface Subscription {
   id: string;
   user_id: string;
   plan: 'free' | 'pro';
-  status: 'active' | 'canceled' | 'past_due' | 'trialing';
+  status: SubscriptionStatus;
+  pro_until: string | null;
   current_period_end: string | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   created_at: string;
+  provider: 'staged' | 'stripe';
+  is_pro_active: boolean;
+  cancel_at_period_end: boolean;
+}
+
+export interface CheckoutIntentResult {
+  url: string;
+  mode: BillingMode;
+  message: string;
+}
+
+const STRIPE_READY = false;
+
+function getEntitlementEndDate(subscription: Pick<Subscription, 'pro_until' | 'current_period_end'>) {
+  return subscription.pro_until ?? subscription.current_period_end;
+}
+
+function hasActiveProAccess(subscription: Pick<Subscription, 'plan' | 'pro_until' | 'current_period_end'>) {
+  if (subscription.plan !== 'pro') return false;
+  const endDate = getEntitlementEndDate(subscription);
+  if (!endDate) return false;
+  return new Date(endDate) > new Date();
+}
+
+async function syncProfileTier(userId: string, tier: 'free' | 'pro') {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ subscription_tier: tier })
+    .eq('id', userId);
+
+  if (error) throw error;
+}
+
+async function trackBillingEvent(userId: string, eventType: EventType, payload: Record<string, string | null | undefined>) {
+  try {
+    await trackEvent(userId, eventType, payload, 'billing');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    // Don't let analytics failures break billing flows
+    console.warn('Could not track billing event', message);
+  }
+}
+
+async function normalizeExpiredSubscription(subscription: Subscription): Promise<Subscription> {
+  if (!subscription.is_pro_active && subscription.plan === 'pro') {
+    const { data, error } = await supabase
+      .from('entitlements')
+      .update({
+        plan: 'free',
+        status: 'canceled',
+        pro_until: null,
+        current_period_end: null,
+      })
+      .eq('id', subscription.id)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    await syncProfileTier(subscription.user_id, 'free');
+
+    return mapEntitlementRow(data as SubscriptionRow);
+  }
+
+  return subscription;
+}
+
+type SubscriptionRow = Awaited<ReturnType<typeof getEntitlement>> & {
+  status?: SubscriptionStatus;
+  current_period_end?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+};
+
+function mapEntitlementRow(row: SubscriptionRow): Subscription {
+  const base: Subscription = {
+    id: row.id,
+    user_id: row.user_id,
+    plan: row.plan,
+    status: row.status ?? 'active',
+    pro_until: row.pro_until ?? null,
+    current_period_end: row.current_period_end ?? null,
+    stripe_customer_id: row.stripe_customer_id ?? null,
+    stripe_subscription_id: row.stripe_subscription_id ?? null,
+    created_at: row.created_at,
+    provider: STRIPE_READY ? 'stripe' : 'staged',
+    is_pro_active: false,
+    cancel_at_period_end: false,
+  };
+
+  const isProActive = hasActiveProAccess(base);
+
+  return {
+    ...base,
+    is_pro_active: isProActive,
+    cancel_at_period_end: base.status === 'canceled' && isProActive,
+  };
 }
 
 /**
  * Get the current subscription/entitlements for a user.
+ * Uses entitlements as the source of truth while Stripe stays staged.
  */
-export async function getSubscription(userId: string): Promise<Subscription | null> {
-  const { data, error } = await supabase
-    .from('entitlements')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+export async function getSubscription(userId: string): Promise<Subscription> {
+  const entitlement = await getEntitlement(userId);
+  const mapped = mapEntitlementRow(entitlement);
 
-  if (error) throw error;
-
-  // If no entitlements row, return a default free subscription
-  if (!data) {
-    return {
-      id: '',
-      user_id: userId,
-      plan: 'free',
-      status: 'active',
-      current_period_end: null,
-      stripe_customer_id: null,
-      stripe_subscription_id: null,
-      created_at: new Date().toISOString(),
-    };
-  }
-
-  return data as Subscription;
+  return normalizeExpiredSubscription(mapped);
 }
 
 /**
- * Create a checkout session via Edge Function.
- * Returns a checkout URL the user can be redirected to.
+ * Stage the checkout flow while Stripe stays offline.
+ * We still capture intent so we can enable billing without rebuilding the UX.
  */
 export async function createCheckout(
   userId: string,
   plan: 'pro',
-): Promise<{ url: string }> {
+): Promise<CheckoutIntentResult> {
+  const subscription = await getSubscription(userId);
+
+  if (subscription.is_pro_active) {
+    return {
+      url: '',
+      mode: 'already-active',
+      message: 'Pro is already active on this account.',
+    };
+  }
+
+  if (!STRIPE_READY) {
+    await trackBillingEvent(userId, EventTypes.BILLING_INTEREST_REQUESTED, {
+      plan,
+      source: 'mobile',
+      provider: 'staged',
+    });
+
+    return {
+      url: '',
+      mode: 'staged',
+      message:
+        'Payments are still in staged rollout. We saved your interest and will unlock Pro billing soon.',
+    };
+  }
+
   const { data, error } = await supabase.functions.invoke('create-checkout', {
     body: { userId, plan },
   });
@@ -58,89 +165,130 @@ export async function createCheckout(
     throw new Error(error.message ?? 'Failed to create checkout');
   }
 
-  return { url: data?.url ?? '' };
+  return {
+    url: data?.url ?? '',
+    mode: 'checkout',
+    message: 'Checkout is ready.',
+  };
 }
 
 /**
  * Handle a Stripe webhook event (server-side).
- * Updates the entitlements table accordingly.
+ * This stays wired for when Stripe is turned on, but it should be invoked
+ * from a trusted function or webhook handler rather than the client app.
  */
 export async function handleWebhook(event: {
   type: string;
   data: {
     userId: string;
     plan: 'free' | 'pro';
-    status: 'active' | 'canceled' | 'past_due';
+    status: SubscriptionStatus;
     stripeSubscriptionId?: string;
     stripeCustomerId?: string;
     currentPeriodEnd?: string;
+    proUntil?: string;
   };
 }): Promise<void> {
-  const { userId, plan, status, stripeSubscriptionId, stripeCustomerId, currentPeriodEnd } =
-    event.data;
+  const {
+    userId,
+    plan,
+    status,
+    stripeSubscriptionId,
+    stripeCustomerId,
+    currentPeriodEnd,
+    proUntil,
+  } = event.data;
 
   switch (event.type) {
     case 'checkout.session.completed':
     case 'customer.subscription.updated': {
-      const { error } = await supabase.from('entitlements').upsert(
-        {
-          user_id: userId,
-          plan,
-          status,
-          stripe_subscription_id: stripeSubscriptionId ?? null,
-          stripe_customer_id: stripeCustomerId ?? null,
-          current_period_end: currentPeriodEnd ?? null,
-        },
-        { onConflict: 'user_id' },
-      );
+      const { data, error } = await supabase
+        .from('entitlements')
+        .upsert(
+          {
+            user_id: userId,
+            plan,
+            status,
+            pro_until: proUntil ?? currentPeriodEnd ?? null,
+            current_period_end: currentPeriodEnd ?? null,
+            stripe_subscription_id: stripeSubscriptionId ?? null,
+            stripe_customer_id: stripeCustomerId ?? null,
+          },
+          { onConflict: 'user_id' },
+        )
+        .select('*')
+        .single();
+
       if (error) throw error;
 
-      // Also update profile tier
-      await supabase
-        .from('profiles')
-        .update({ subscription_tier: plan })
-        .eq('id', userId);
+      const subscription = mapEntitlementRow(data as SubscriptionRow);
+      await syncProfileTier(userId, subscription.is_pro_active ? 'pro' : 'free');
       break;
     }
 
     case 'customer.subscription.deleted': {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('entitlements')
-        .update({ plan: 'free', status: 'canceled' })
-        .eq('user_id', userId);
+        .update({
+          plan: 'free',
+          status: 'canceled',
+          pro_until: null,
+          current_period_end: null,
+        })
+        .eq('user_id', userId)
+        .select('*')
+        .single();
+
       if (error) throw error;
 
-      await supabase
-        .from('profiles')
-        .update({ subscription_tier: 'free' })
-        .eq('id', userId);
+      await syncProfileTier(userId, mapEntitlementRow(data as SubscriptionRow).is_pro_active ? 'pro' : 'free');
       break;
     }
   }
 }
 
 /**
- * Cancel the user's subscription.
+ * Cancel the user's subscription while preserving access through the paid period.
+ * When Stripe is offline, we still mark the request and keep the product state honest.
  */
-export async function cancelSubscription(userId: string): Promise<void> {
-  // Call edge function to cancel in Stripe
-  const { error } = await supabase.functions.invoke('cancel-subscription', {
+export async function cancelSubscription(userId: string): Promise<Subscription> {
+  const subscription = await getSubscription(userId);
+
+  if (!subscription.is_pro_active) {
+    return subscription;
+  }
+
+  const entitlementEnd = getEntitlementEndDate(subscription);
+
+  if (!STRIPE_READY) {
+    await trackBillingEvent(userId, EventTypes.BILLING_CANCELLATION_REQUESTED, {
+      source: 'mobile',
+      provider: 'staged',
+      currentPeriodEnd: entitlementEnd,
+    });
+    // Don't mutate the entitlements table while Stripe is staged —
+    // just record the intent so billing can be reconciled later.
+    return subscription;
+  }
+
+  const { error: cancelError } = await supabase.functions.invoke('cancel-subscription', {
     body: { userId },
   });
 
-  if (error) {
-    throw new Error(error.message ?? 'Failed to cancel subscription');
+  if (cancelError) {
+    throw new Error(cancelError.message ?? 'Failed to cancel subscription');
   }
 
-  // Update local entitlements
-  await supabase
+  const { data, error } = await supabase
     .from('entitlements')
     .update({ status: 'canceled' })
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .select('*')
+    .single();
 
-  // Update profile
-  await supabase
-    .from('profiles')
-    .update({ subscription_tier: 'free' })
-    .eq('id', userId);
+  if (error) throw error;
+
+  const nextSubscription = mapEntitlementRow(data as SubscriptionRow);
+  await syncProfileTier(userId, nextSubscription.is_pro_active ? 'pro' : 'free');
+  return nextSubscription;
 }

@@ -5,6 +5,7 @@ export * from './onboarding';
 // Supabase client & types
 export { supabase } from './supabase/client';
 export type * from './supabase/types';
+export type * from './supabase/app-types';
 
 // AI foundation
 export type * from './ai/llm-client';
@@ -54,6 +55,7 @@ export * from './hooks/useEntitlements';
 export * from './hooks/useEvents';
 export * from './hooks/useAutopilot';
 export * from './hooks/useBilling';
+export * from './hooks/useNotificationCenter';
 
 // Providers
 export { QueryProvider, queryClient } from './providers/QueryProvider';
