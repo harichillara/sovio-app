@@ -122,8 +122,8 @@ export function isOAuthCallbackUrl(url?: string | null) {
 export async function completeOAuthFromUrl(url: string) {
   const params = extractParams(url);
 
-  if (params.error_description || params.error) {
-    throw new Error(params.error_description ?? params.error);
+  if (params.error_description || params.error || params.error_code) {
+    throw new Error(params.error_description ?? params.error ?? params.error_code);
   }
 
   if (params.code) {
