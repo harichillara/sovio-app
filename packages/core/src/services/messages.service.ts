@@ -108,7 +108,12 @@ export async function getThreads(userId: string): Promise<ThreadWithMeta[]> {
   }
 
   if (error) {
-    console.warn('Falling back to client thread summary query', error.message);
+    // Only fall back for missing-function errors (42883); propagate auth/network/permission errors
+    const isRpcMissing = error.code === '42883';
+    if (!isRpcMissing) {
+      throw error;
+    }
+    console.warn('RPC get_thread_summaries not found, falling back to client query');
   }
 
   return getThreadsFallback(userId);
