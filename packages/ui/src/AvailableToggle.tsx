@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import type { AvailableToggleProps } from './types';
@@ -23,6 +23,8 @@ export function AvailableToggle({
 }: AvailableToggleProps) {
   const { theme } = useTheme();
   const [countdown, setCountdown] = useState('');
+  const onToggleRef = useRef(onToggle);
+  onToggleRef.current = onToggle;
 
   useEffect(() => {
     if (!expiresAt || !isAvailable) {
@@ -34,14 +36,14 @@ export function AvailableToggle({
       const remaining = new Date(expiresAt).getTime() - Date.now();
       if (remaining <= 0) {
         setCountdown('Expired');
-        onToggle(false);
+        onToggleRef.current(false);
         clearInterval(interval);
       } else {
         setCountdown(formatCountdown(expiresAt));
       }
     }, 30_000);
     return () => clearInterval(interval);
-  }, [expiresAt, isAvailable, onToggle]);
+  }, [expiresAt, isAvailable]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.surface }]}>

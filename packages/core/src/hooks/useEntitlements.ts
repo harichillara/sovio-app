@@ -26,10 +26,13 @@ export function useEntitlement() {
 /**
  * Derived boolean: is the current user on a pro plan?
  */
+// Must stay in sync with entitlements.service.ts and billing.service.ts
+const CLOCK_SKEW_GRACE_MS = 5 * 60 * 1000;
+
 export function useIsPro(): boolean {
   const { data } = useEntitlement();
   if (!data) return false;
   if (data.plan !== 'pro') return false;
   if (!data.pro_until) return false;
-  return new Date(data.pro_until) > new Date();
+  return new Date(data.pro_until).getTime() > (Date.now() - CLOCK_SKEW_GRACE_MS);
 }

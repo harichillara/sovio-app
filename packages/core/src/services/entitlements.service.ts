@@ -137,6 +137,10 @@ export async function getEntitlement(userId: string): Promise<Entitlement> {
   return normalizeEntitlement(fallback);
 }
 
+// Grace period to account for client/server clock skew (5 minutes).
+// Must stay in sync with billing.service.ts CLOCK_SKEW_GRACE_MS.
+const CLOCK_SKEW_GRACE_MS = 5 * 60 * 1000;
+
 /**
  * Check whether the user has a pro plan.
  */
@@ -144,7 +148,7 @@ export async function isPro(userId: string): Promise<boolean> {
   const ent = await resetQuotaIfNeeded(await getEntitlement(userId));
   if (ent.plan !== 'pro') return false;
   if (!ent.pro_until) return false;
-  return new Date(ent.pro_until) > new Date();
+  return new Date(ent.pro_until).getTime() > (Date.now() - CLOCK_SKEW_GRACE_MS);
 }
 
 /**
@@ -160,7 +164,7 @@ export async function checkQuota(
 
   const userIsPro =
     ent.plan === 'pro' && ent.pro_until
-      ? new Date(ent.pro_until) > now
+      ? new Date(ent.pro_until).getTime() > (now.getTime() - CLOCK_SKEW_GRACE_MS)
       : false;
   const limit = userIsPro ? PRO_DAILY_LIMIT : FREE_DAILY_LIMIT;
   const used = ent.daily_ai_calls_used;

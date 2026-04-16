@@ -124,35 +124,51 @@ export async function setAvailable(
 
   if (fetchError) throw fetchError;
 
-  if (existing) {
-    const { error } = await supabase
-      .from('momentum_availability')
-      .update(primaryPayload as MomentumUpdate | LegacyMomentumPayload)
-      .eq('id', existing.id);
+  async function tryWithFallback(
+    op: 'update' | 'insert',
+    existingId?: string,
+  ): Promise<MomentumAvailability> {
+    const label = `[setAvailable] Primary ${op}`;
+
+    const primary =
+      op === 'update'
+        ? supabase.from('momentum_availability').update(primaryPayload as MomentumUpdate | LegacyMomentumPayload).eq('id', existingId!)
+        : supabase.from('momentum_availability').insert({ user_id: userId, ...(primaryPayload as MomentumInsert | LegacyMomentumPayload) } as MomentumInsert);
+
+    const { error } = await primary;
 
     if (!error) {
       const refreshed = await getMyAvailability(userId);
-      if (refreshed) {
-        return refreshed;
-      }
-    } else {
-      console.warn('[setAvailable] Primary update failed, trying fallback schema. Error:', error.message);
+      return refreshed ?? normalizeAvailability({
+        ...(existingId ? { id: existingId } : {}),
+        user_id: userId,
+        bucket,
+        category,
+        available_until: availableUntil,
+        lat: options?.lat ?? null,
+        lng: options?.lng ?? null,
+        availability_mode: options?.availabilityMode ?? 'open_now',
+        confidence_label: options?.confidenceLabel ?? 'open_to_plans',
+        source: options?.source ?? 'manual',
+        created_at: new Date().toISOString(),
+      });
     }
 
-    const { error: fallbackError } = await supabase
-      .from('momentum_availability')
-      .update(fallbackPayload)
-      .eq('id', existing.id);
+    console.warn(`${label} failed, trying fallback schema. Error:`, error.message);
 
+    const fallback =
+      op === 'update'
+        ? supabase.from('momentum_availability').update(fallbackPayload).eq('id', existingId!)
+        : supabase.from('momentum_availability').insert({ user_id: userId, ...fallbackPayload } as MomentumInsert);
+
+    const { error: fallbackError } = await fallback;
     if (fallbackError) throw fallbackError;
 
     const refreshed = await getMyAvailability(userId);
-    if (refreshed) {
-      return refreshed;
-    }
+    if (refreshed) return refreshed;
 
     return normalizeAvailability({
-      id: existing.id,
+      ...(existingId ? { id: existingId } : {}),
       user_id: userId,
       bucket,
       category,
@@ -166,48 +182,9 @@ export async function setAvailable(
     });
   }
 
-  const { error } = await supabase
-    .from('momentum_availability')
-    .insert({
-      user_id: userId,
-      ...(primaryPayload as MomentumInsert | LegacyMomentumPayload),
-    } as MomentumInsert);
-
-  if (!error) {
-    const refreshed = await getMyAvailability(userId);
-    if (refreshed) {
-      return refreshed;
-    }
-  } else {
-    console.warn('[setAvailable] Primary insert failed, trying fallback schema. Error:', error.message);
-  }
-
-  const { error: fallbackError } = await supabase
-    .from('momentum_availability')
-    .insert({
-      user_id: userId,
-      ...fallbackPayload,
-    } as MomentumInsert);
-
-  if (fallbackError) throw fallbackError;
-
-  const refreshed = await getMyAvailability(userId);
-  if (refreshed) {
-    return refreshed;
-  }
-
-  return normalizeAvailability({
-    user_id: userId,
-    bucket,
-    category,
-    available_until: availableUntil,
-    lat: options?.lat ?? null,
-    lng: options?.lng ?? null,
-    availability_mode: options?.availabilityMode ?? 'open_now',
-    confidence_label: options?.confidenceLabel ?? 'open_to_plans',
-    source: options?.source ?? 'manual',
-    created_at: new Date().toISOString(),
-  });
+  return existing
+    ? tryWithFallback('update', existing.id)
+    : tryWithFallback('insert');
 }
 
 /**

@@ -26,7 +26,7 @@ export class GeminiClient implements LLMClient {
   // ---------------------------------------------------------------------------
 
   async embed(texts: string[]): Promise<number[][]> {
-    const url = `${BASE_URL}/${EMBEDDING_MODEL}:batchEmbedContents?key=${this.apiKey}`;
+    const url = `${BASE_URL}/${EMBEDDING_MODEL}:batchEmbedContents`;
 
     const requests = texts.map((text) => ({
       model: EMBEDDING_MODEL,
@@ -35,7 +35,10 @@ export class GeminiClient implements LLMClient {
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': this.apiKey,
+      },
       body: JSON.stringify({ requests }),
     });
 
@@ -59,7 +62,7 @@ export class GeminiClient implements LLMClient {
     prompt: string,
     params?: GenerateParams,
   ): Promise<GenerateResult> {
-    const url = `${BASE_URL}/${GENERATION_MODEL}:generateContent?key=${this.apiKey}`;
+    const url = `${BASE_URL}/${GENERATION_MODEL}:generateContent`;
 
     const body: Record<string, unknown> = {
       contents: [{ parts: [{ text: prompt }] }],
@@ -71,7 +74,10 @@ export class GeminiClient implements LLMClient {
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': this.apiKey,
+      },
       body: JSON.stringify(body),
     });
 
@@ -128,16 +134,15 @@ export class GeminiClient implements LLMClient {
         categories: parsed.categories ?? {},
       };
     } catch (err) {
-      // If classification fails, err on the side of caution but log the issue
-      // so moderation outages do not go unnoticed.
+      // Fail closed: if moderation is unavailable, treat content as flagged
+      // to prevent unsafe content from reaching other users.
       console.error(
-        '[GeminiClient.moderate] Content moderation failed — defaulting to unflagged. ' +
-        'This may allow unsafe content through.',
+        '[GeminiClient.moderate] Content moderation failed — defaulting to FLAGGED.',
         err instanceof Error ? err.message : err,
       );
       return {
-        flagged: false,
-        categories: {},
+        flagged: true,
+        categories: { moderation_unavailable: true },
       };
     }
   }

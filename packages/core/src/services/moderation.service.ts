@@ -71,35 +71,35 @@ export async function blockUser(
   userId: string,
   targetId: string,
 ): Promise<void> {
-  // Update any existing friendship to 'blocked'
-  const { error: updateError } = await supabase
+  // Check if a friendship row already exists
+  const { data: existing } = await supabase
     .from('friendships')
-    .update({ status: 'blocked', blocked_by: userId })
+    .select('id')
     .or(
       `and(user_id.eq.${userId},friend_id.eq.${targetId}),and(user_id.eq.${targetId},friend_id.eq.${userId})`,
-    );
+    )
+    .limit(1);
 
-  // If no existing friendship, create a blocked one
-  if (!updateError) {
-    const { data: existing } = await supabase
+  if (existing?.length) {
+    // Update the existing friendship to 'blocked'
+    const { error: updateError } = await supabase
       .from('friendships')
-      .select('id')
+      .update({ status: 'blocked', blocked_by: userId })
       .or(
         `and(user_id.eq.${userId},friend_id.eq.${targetId}),and(user_id.eq.${targetId},friend_id.eq.${userId})`,
-      )
-      .limit(1);
-
-    if (!existing?.length) {
-      const { error: insertError } = await supabase.from('friendships').insert({
-        user_id: userId,
-        friend_id: targetId,
-        status: 'blocked',
-        blocked_by: userId,
-      });
-      if (insertError) {
-        console.error('[blockUser] Failed to insert blocked friendship record.', insertError.message);
-        throw insertError;
-      }
+      );
+    if (updateError) throw updateError;
+  } else {
+    // No existing friendship — create a blocked one
+    const { error: insertError } = await supabase.from('friendships').insert({
+      user_id: userId,
+      friend_id: targetId,
+      status: 'blocked',
+      blocked_by: userId,
+    });
+    if (insertError) {
+      console.error('[blockUser] Failed to insert blocked friendship record.', insertError.message);
+      throw insertError;
     }
   }
 }

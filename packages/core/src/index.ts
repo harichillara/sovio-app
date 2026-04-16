@@ -28,7 +28,13 @@ export * as momentumService from './services/momentum.service';
 export * as moderationService from './services/moderation.service';
 export * as entitlementsService from './services/entitlements.service';
 export * as autopilotService from './services/autopilot.service';
-export * as billingService from './services/billing.service';
+export {
+  getSubscription,
+  createCheckout,
+  cancelSubscription,
+  type Subscription,
+  type CheckoutIntentResult,
+} from './services/billing.service';
 
 // Stores
 export { useAuthStore } from './stores/auth.store';

@@ -237,7 +237,7 @@ export default function ThreadDetailModal() {
           contentContainerStyle={{ gap: 4, paddingVertical: 8 }}
           showsVerticalScrollIndicator={false}
           onEndReached={() => {
-            if (messagesQuery.hasNextPage) {
+            if (messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
               messagesQuery.fetchNextPage();
             }
           }}

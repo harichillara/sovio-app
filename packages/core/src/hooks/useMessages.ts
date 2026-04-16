@@ -30,16 +30,18 @@ export function useThreads() {
 }
 
 export function useMessages(threadId: string) {
+  const userId = useAuthStore((s) => s.user?.id);
+
   return useInfiniteQuery({
     queryKey: queryKeys.messages(threadId),
     queryFn: ({ pageParam }) =>
-      messagesService.getMessages(threadId, pageParam),
+      messagesService.getMessages(threadId, userId!, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => {
       if (lastPage.length < 50) return undefined;
       return lastPage[lastPage.length - 1]?.created_at;
     },
-    enabled: !!threadId,
+    enabled: !!threadId && !!userId,
   });
 }
 

@@ -12,7 +12,7 @@ export async function getPlans(userId: string, filters?: PlanFilters) {
     .from('plans')
     .select(`
       *,
-      plan_participants!inner(user_id, status)
+      plan_participants(user_id, status)
     `)
     .or(`creator_id.eq.${userId},plan_participants.user_id.eq.${userId}`)
     .order('created_at', { ascending: false });
@@ -26,18 +26,7 @@ export async function getPlans(userId: string, filters?: PlanFilters) {
   }
 
   const { data, error } = await query;
-  if (error) {
-    // Fallback: query without the inner join filter
-    const fallback = supabase
-      .from('plans')
-      .select('*')
-      .eq('creator_id', userId)
-      .order('created_at', { ascending: false });
-
-    const { data: fallbackData, error: fallbackError } = await fallback;
-    if (fallbackError) throw fallbackError;
-    return fallbackData;
-  }
+  if (error) throw error;
   return data;
 }
 
@@ -69,12 +58,14 @@ export async function createPlan(plan: PlanInsert): Promise<Plan> {
 
 export async function updatePlan(
   planId: string,
+  creatorId: string,
   updates: Partial<PlanUpdate>,
 ): Promise<Plan> {
   const { data, error } = await supabase
     .from('plans')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', planId)
+    .eq('creator_id', creatorId)
     .select()
     .single();
   if (error) throw error;

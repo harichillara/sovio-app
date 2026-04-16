@@ -244,7 +244,7 @@ export async function handleWebhook(event: {
 
       if (error) throw error;
 
-      await syncProfileTier(userId, mapEntitlementRow(data as SubscriptionRow).is_pro_active ? 'pro' : 'free');
+      await syncProfileTier(userId, 'free');
       break;
     }
   }

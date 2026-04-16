@@ -63,11 +63,14 @@ async function getThreadsFallback(userId: string): Promise<ThreadWithMeta[]> {
 
   if (tError) throw tError;
 
+  // Cap the fetch to avoid pulling the entire message history.
+  // We only need the latest message per thread and unread counts.
   const { data: messages, error: messagesError } = await supabase
     .from('messages')
     .select('*')
     .in('thread_id', threadIds)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(threadIds.length * 50);
 
   if (messagesError) throw messagesError;
 
@@ -80,7 +83,9 @@ async function getThreadsFallback(userId: string): Promise<ThreadWithMeta[]> {
     }
 
     const lastReadAt = lastReadMap.get(message.thread_id);
-    const isUnread = !lastReadAt || new Date(message.created_at) > new Date(lastReadAt);
+    const isUnread =
+      message.sender_id !== userId &&
+      (!lastReadAt || new Date(message.created_at) > new Date(lastReadAt));
 
     if (isUnread) {
       unreadCounts.set(message.thread_id, (unreadCounts.get(message.thread_id) ?? 0) + 1);
@@ -119,7 +124,19 @@ export async function getThreads(userId: string): Promise<ThreadWithMeta[]> {
   return getThreadsFallback(userId);
 }
 
-export async function getMessages(threadId: string, cursor?: string) {
+async function assertThreadParticipant(threadId: string, userId: string) {
+  const { data } = await supabase
+    .from('thread_participants')
+    .select('id')
+    .eq('thread_id', threadId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!data) throw new Error('Not a participant of this thread');
+}
+
+export async function getMessages(threadId: string, userId: string, cursor?: string) {
+  await assertThreadParticipant(threadId, userId);
+
   let query = supabase
     .from('messages')
     .select('*')
@@ -142,6 +159,8 @@ export async function sendMessage(
   content: string,
   isAiDraft = false,
 ): Promise<Message> {
+  await assertThreadParticipant(threadId, senderId);
+
   const { data, error } = await supabase
     .from('messages')
     .insert({

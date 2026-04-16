@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@sovio/tokens/ThemeContext';
+import { withAlpha } from './styles';
 import type { MessageBubbleProps } from './types';
 
 export function MessageBubble({ content, isMine, isAIDraft, timestamp }: MessageBubbleProps) {
@@ -39,7 +40,7 @@ export function MessageBubble({ content, isMine, isAIDraft, timestamp }: Message
         <Text
           style={[
             styles.time,
-            { color: isMine ? theme.background + '99' : theme.muted },
+            { color: isMine ? withAlpha(theme.background, 0.6) : theme.muted },
           ]}
         >
           {formattedTime}

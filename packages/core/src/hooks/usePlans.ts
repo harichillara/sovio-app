@@ -58,6 +58,7 @@ export function useCreatePlan() {
 
 export function useUpdatePlan() {
   const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
 
   return useMutation({
     mutationFn: ({
@@ -66,7 +67,10 @@ export function useUpdatePlan() {
     }: {
       planId: string;
       data: Partial<PlanUpdate>;
-    }) => plansService.updatePlan(planId, data),
+    }) => {
+      if (!userId) throw new Error('Not authenticated');
+      return plansService.updatePlan(planId, userId, data);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({
