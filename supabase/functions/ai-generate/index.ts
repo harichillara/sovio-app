@@ -5,6 +5,7 @@ import * as Sentry from 'https://deno.land/x/sentry@7.120.3/index.mjs';
 import { createRequestLogger, Logger } from '../_shared/logger.ts';
 import { parseJson, z } from '../_shared/validate.ts';
 import { sanitizeUserInput, wrapUntrusted, INJECTION_DEFENSE_HEADER } from '../_shared/prompt-safety.ts';
+import { getLLMClient, LLMError } from '../_shared/llm/index.ts';
 import { AiGenerateBodySchema, type AiGenerateBody } from './schemas.ts';
 import {
   consumeRateLimit,
@@ -44,9 +45,18 @@ if (SENTRY_DSN) {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+// Shared LLM adapter — provider is pluggable via LLM_PROVIDER env (default
+// 'gemini'). See supabase/functions/_shared/llm/ for the interface + adapters.
+// We construct lazily so tests and code paths that never touch the LLM can
+// still import this module without a provider configured.
+let _llmClient: ReturnType<typeof getLLMClient> | null = null;
+function llm() {
+  if (_llmClient === null) _llmClient = getLLMClient();
+  return _llmClient;
+}
 
 // ---------------------------------------------------------------------------
 // Auth helpers
@@ -267,34 +277,41 @@ async function enforceQuotaAndRun<T>(
 }
 
 // ---------------------------------------------------------------------------
-// Gemini helper
+// LLM helper
+//
+// Thin wrappers around the shared LLM adapter so call sites stay terse. If
+// the provider is missing config (e.g. GEMINI_API_KEY not set in a staging
+// env), we degrade gracefully with the same sentinel string the old direct
+// `callGemini` used — callers that expect plain text are already resilient
+// to that; JSON callers have their own fallback paths.
 // ---------------------------------------------------------------------------
 
-async function callGemini(prompt: string): Promise<string> {
-  if (!GEMINI_API_KEY) return '(AI unavailable — no API key configured)';
+const AI_UNAVAILABLE_SENTINEL = '(AI unavailable — no API key configured)';
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
-      }),
-    },
-  );
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini API error: ${res.status} ${err}`);
+async function llmText(prompt: string): Promise<string> {
+  try {
+    return await llm().generateText({ prompt });
+  } catch (err) {
+    if (err instanceof LLMError && err.reason === 'config') {
+      return AI_UNAVAILABLE_SENTINEL;
+    }
+    throw err;
   }
+}
 
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+// Returns raw text the caller will JSON.parse with its existing fallback.
+// We keep this shape (raw string return) to preserve the pre-adapter
+// contract at every op site — they all expect to parse + fall back on
+// failure, rather than have the adapter throw.
+async function llmJsonText(prompt: string): Promise<string> {
+  try {
+    return await llm().generateText({ prompt, temperature: 0.2 });
+  } catch (err) {
+    if (err instanceof LLMError && err.reason === 'config') {
+      return AI_UNAVAILABLE_SENTINEL;
+    }
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -349,7 +366,7 @@ Tier: ${wrapUntrusted('subscription_tier', tierRes.clean)}
 Return a JSON array of objects with: title (string), summary (string, 1-2 sentences), type ("plan" | "place" | "group"), confidence (0.0-1.0).
 Return ONLY valid JSON, no markdown.`;
 
-  const raw = await callGemini(prompt);
+  const raw = await llmJsonText(prompt);
 
   let suggestions: any[];
   try {
@@ -424,7 +441,7 @@ ${wrapUntrusted('conversation', conversation)}
 
 Draft reply:`;
 
-  const draft = await callGemini(prompt);
+  const draft = await llmText(prompt);
   return { draft: draft.trim() };
 }
 
@@ -476,7 +493,7 @@ ${wrapUntrusted('missed_moments', missedLines)}
 Return a JSON array of objects with: title (string), reason (string).
 Return ONLY valid JSON.`;
 
-  const raw = await callGemini(prompt);
+  const raw = await llmJsonText(prompt);
 
   let items: any[];
   try {
@@ -554,7 +571,7 @@ ${wrapUntrusted('activity', activityRes.clean)}
 Return a JSON object with: insight (string), experiment (string, 1 sentence).
 Return ONLY valid JSON.`;
 
-  const raw = await callGemini(prompt);
+  const raw = await llmJsonText(prompt);
 
   let result: any;
   try {
@@ -629,7 +646,7 @@ Constraints:
 Return a JSON object with: title (string), summary (string, 2-3 sentences), assumptions (string array of 2-3 items).
 Return ONLY valid JSON.`;
 
-  const raw = await callGemini(prompt);
+  const raw = await llmJsonText(prompt);
 
   let result: any;
   try {
@@ -1031,14 +1048,75 @@ async function handleCronCleanup() {
 async function handleCronRetention() {
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const cutoffIso = ninetyDaysAgo.toISOString();
 
+  // --- Preferred path: drop whole partitions whose upper bound is older
+  //     than the cutoff. This is O(1) vs. a heap-walking DELETE that bloats
+  //     the table and fights INSERTs for locks.
+  //
+  //     We query pg_inherits + pg_class for child partitions of app_events
+  //     and parse pg_get_expr(c.relpartbound, c.oid) to find the upper
+  //     bound ("TO ('YYYY-MM-DD')"). Anything strictly before the cutoff
+  //     is safe to drop.
+  //
+  //     Uses supabase.rpc('exec_sql', ...) style is not available here, so
+  //     we issue the SQL through a PostgREST function via .rpc(). If that
+  //     RPC isn't installed (or the table isn't partitioned), we fall back
+  //     to a plain DELETE.
+  try {
+    const { data: partitionsToDrop, error: listErr } = await supabase.rpc(
+      'list_app_events_partitions_before',
+      { cutoff: cutoffIso },
+    );
+
+    if (!listErr && Array.isArray(partitionsToDrop) && partitionsToDrop.length > 0) {
+      const droppedNames: string[] = [];
+      for (const row of partitionsToDrop as Array<{ partition_name: string }>) {
+        const name = row.partition_name;
+        if (!name || !/^app_events_\d{4}_\d{2}$/.test(name)) {
+          // Defensive: refuse to run DROP on anything not matching our
+          // strict partition-name pattern.
+          continue;
+        }
+        const { error: dropErr } = await supabase.rpc('drop_app_events_partition', {
+          partition_name: name,
+        });
+        if (dropErr) {
+          // Log + continue — one failed drop shouldn't strand the rest.
+          // eslint-disable-next-line no-console
+          console.warn('cron_retention: drop %s failed: %s', name, dropErr.message);
+          continue;
+        }
+        droppedNames.push(name);
+      }
+      // eslint-disable-next-line no-console
+      console.log(
+        'cron_retention: dropped %d partitions (%s)',
+        droppedNames.length,
+        droppedNames.join(', '),
+      );
+      return { strategy: 'partition_drop', droppedCount: droppedNames.length, droppedNames };
+    }
+
+    // listErr OR empty list OR RPC missing — fall through to delete fallback.
+    if (listErr) {
+      // eslint-disable-next-line no-console
+      console.warn('cron_retention: partition listing failed, falling back to DELETE: %s', listErr.message);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('cron_retention: partition path threw, falling back to DELETE: %s', String(err));
+  }
+
+  // --- Fallback path: age-based DELETE. Used when the partition-listing
+  //     helper isn't installed (e.g. pre-partition migration deploys).
   const { data: purged } = await supabase
     .from('app_events')
     .delete()
-    .lt('created_at', ninetyDaysAgo.toISOString())
+    .lt('created_at', cutoffIso)
     .select('id');
 
-  return { purged: purged?.length ?? 0 };
+  return { strategy: 'delete_fallback', purged: purged?.length ?? 0 };
 }
 
 // ---------------------------------------------------------------------------
