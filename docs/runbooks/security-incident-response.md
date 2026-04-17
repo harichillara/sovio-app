@@ -393,3 +393,137 @@ psql "$SUPABASE_DB_URL" -c "select pg_terminate_backend(<pid>);"
 pg_dump "$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges \
   --file="sovio-incident-$(date -u +%Y%m%dT%H%M%SZ).dump"
 ```
+
+---
+
+## Appendix: Security posture controls
+
+Covers the three gaps identified in the Phase-4+ posture audit that are
+configured **outside the code repo** — operational controls that need
+owners, cadences, and periodic verification rather than pull requests.
+Review this appendix at the same time as the IR tabletop (quarterly).
+
+### A. Auth-callback abuse (Gap 1)
+
+**Surface:** Supabase's hosted `/auth/v1/*` endpoints (sign-in, OAuth exchange,
+password reset, magic-link). We **do not expose our own callback route** —
+Supabase JS handles the OAuth exchange client-side via `exchangeCodeForSession`,
+so there is no Next.js or edge-fn endpoint to rate-limit. That puts abuse
+mitigation squarely on Supabase's dashboard controls.
+
+**Controls to verify (Supabase Dashboard → Authentication → Rate Limits):**
+
+| Control | Default | Target | Rationale |
+|---|---|---|---|
+| Sign-ups per IP / hour | 30 | 10 | Blocks scripted signup floods. |
+| Sign-ins (failed) per IP / 5 min | 5 | 5 | Default is fine — don't over-tune or locks real users. |
+| Magic link / OTP per address / hour | 30 | 5 | Stops email-bombing attacks via our From: domain. |
+| Password reset per address / hour | 30 | 3 | Same reasoning — mailbox abuse protection. |
+| Token refresh per session / hour | — | Leave default | Legit apps burn many refreshes. |
+
+**Owner:** Auth owner (see rotation below).
+**Cadence:** Verify on dashboard every 30 days; after every Supabase minor
+upgrade (defaults can shift).
+**Signal of abuse:** spike in `auth.users` inserts with no follow-on
+`app_events`; spike in `auth.audit_log_entries` with `action='otp_requested'`.
+
+```sql
+-- 15-min smoke query to spot signup/OTP abuse
+select date_trunc('hour', created_at) as hour,
+       raw_user_meta_data->>'ip' as ip,
+       count(*)
+  from auth.users
+ where created_at > now() - interval '24 hours'
+ group by 1, 2
+ order by 3 desc
+ limit 20;
+```
+
+If the dashboard caps are being hit in legitimate traffic, add a
+Vercel-Firewall (section B) rule on the sign-in page route rather than
+loosening Supabase's limits.
+
+### B. WAF / bot protection (Gap 4)
+
+**Web tier (apps/web):** Vercel Firewall is the control plane. It sits
+in front of the Next.js deployment and evaluates before any route runs.
+
+**Required Vercel Firewall rules** (configured at
+`https://vercel.com/<team>/sovio-web/settings/firewall`):
+
+1. **Rate-limit `POST /api/*`** — 30 rpm per IP, challenge above.
+   Catches anyone trying to abuse our server actions / API routes that
+   ultimately call Supabase edge fns.
+2. **Challenge non-US/EU traffic to `/auth/*`** — optional, enable
+   only if abuse pattern confirms geographic source. Don't default-on;
+   legitimate users travel.
+3. **Block known-bot UAs on `/`** — Vercel has a managed bot list;
+   enable "Managed Challenge" mode, not "Block", to avoid false positives
+   on scrapers we want (Open Graph previews, Slack unfurls).
+4. **Rate-limit `/login`, `/signup` pages** — 10 rpm per IP. Mirrors
+   the Supabase dashboard caps from section A so Vercel absorbs the
+   traffic before Supabase sees it.
+
+**Supabase tier (edge functions):** There is no WAF in front of
+`*.functions.supabase.co`. Our defense is:
+  - `_shared/rate-limit.ts` (Phase 3 Task 16) — per-user/per-IP sliding
+    windows enforced in Postgres (`rate_limit_counters`).
+  - `authenticateUser` on every user-facing edge fn — rejects without
+    a valid JWT before spending Gemini tokens.
+  - Service-role gate on cron endpoints — string equality on the
+    Authorization header.
+
+If abuse pattern ever reaches the edge fns directly (bypassing web),
+the escalation is **Cloudflare in front of Supabase**: proxy the
+`<project>.functions.supabase.co` hostname through a CNAME on a domain
+we control, then apply Cloudflare's WAF + Bot Fight Mode. Not enabled
+today — cost + complexity not justified pre-public-launch.
+
+**Owner:** Platform owner.
+**Cadence:** Review Vercel Firewall analytics every 30 days. Verify
+rules in a post-deploy smoke after every `apps/web` production deploy
+(ensures nothing deleted the rules).
+
+### C. On-call paging rotation (Gap 5)
+
+**Why:** Sentry alerts + Supabase log drain alerts need to reach a human
+within minutes. Today all alerts route to founders' email — which is
+paging on a best-effort basis, not an SLA. An incident at 2am Saturday
+fails silently.
+
+**Rotation structure** (until headcount justifies a proper PagerDuty tier):
+
+| Role | Owner (today) | Backup | Pages for |
+|---|---|---|---|
+| **Primary on-call** | harichillara@gmail.com | — | All Sentry P1/P2, edge-fn 5xx spikes, Supabase project downtime, `billing-webhook` failures, RLS denial anomalies. |
+| **Auth owner** | harichillara@gmail.com | — | Auth-callback abuse alerts (section A), forced-logout events, service-role-key usage anomalies. |
+| **Platform owner** | harichillara@gmail.com | — | Vercel Firewall anomalies (section B), deploy rollbacks, CDN/DNS issues. |
+| **Data owner** | harichillara@gmail.com | — | pg_cron failures, migration drift, DB CPU > 80% sustained. |
+
+Single-owner today is a known risk and is the *main reason* this
+appendix exists — to make the gap visible rather than implicit. When
+the team grows past one, fan these out and verify each alert rule still
+reaches someone.
+
+**Escalation ladder (tune once a second person joins):**
+1. **T+0** — Sentry/alert fires → email + (future) SMS to Primary.
+2. **T+15 min** — No ack → page Backup.
+3. **T+30 min** — No ack → declare incident, post to status page,
+   follow the IR playbook above.
+
+**Page routes to configure:**
+  - Sentry → PagerDuty integration (deferred; today: email-only).
+  - Supabase log drain → Logflare → email digest (daily), SMS on
+    rule-match (critical only: `billing-webhook` 5xx, service-role
+    auth failures).
+  - Vercel deploy failures → webhook into `#deploys` (when a team
+    Slack exists; deferred).
+
+**Cadence:** Tabletop every 90 days walks this rotation end-to-end —
+fire a synthetic Sentry event, confirm it reaches the primary, confirm
+the IR runbook commands still work. Log the outcome in the internal
+security log.
+
+**Signal this appendix is stale:** ownership row says "today" for >60
+days without review, or the tabletop hasn't been run in the last
+quarter. Either condition → open a follow-up task and revisit.
