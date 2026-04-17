@@ -9,3 +9,19 @@ dist/
 .env
 .env.local
 .env*.local
+
+# Project-scoped MCP config — holds real secrets locally.
+# Commit .mcp.example.json instead (no secret).
+.mcp.json
+
+# Claude Code local artifacts (per-machine PowerShell scripts, worktrees).
+# Keep `launch.json`, `settings.local.json`, rules, and skills committed.
+.claude/tmp/
+.claude/worktrees/
+
+# Supabase CLI local cache (login state, linked project metadata).
+supabase/.temp/
+
+# One-off local outputs that aren't worth committing.
+typecheck-output.txt
+REVIEW1_LOG.md
