@@ -99,8 +99,24 @@ export function subscribeToThreadMessages(
   state.refCount += 1;
 
   // ---- 2. Lazily create the shared channel -------------------------------
+  //
+  // F1 fix: we pass a status callback to `.subscribe()` so terminal
+  // errors (CHANNEL_ERROR, TIMED_OUT, CLOSED) don't leave us with a
+  // non-null `state.channel` that new subscribers silently join and
+  // never hear from. On a terminal status we:
+  //   (a) remove the dead channel from the transport,
+  //   (b) reset `state.channel` to null so the NEXT call to
+  //       subscribeToThreadMessages() triggers a fresh channel,
+  //   (c) log so Sentry/console sees the incident.
+  //
+  // We intentionally DON'T auto-reconnect here — Supabase's transport
+  // layer already reconnects the websocket; the channel-level error
+  // usually means the subscription itself is invalid (RLS change, bad
+  // topic, server-side rate-limit). Blindly re-subscribing in a loop
+  // would DOS ourselves. Letting the next organic subscribe attempt
+  // bootstrap a new channel is the right backoff.
   if (!state.channel) {
-    state.channel = client
+    const newChannel = client
       .channel('messages-multiplex')
       .on(
         // Supabase types for postgres_changes are notoriously loose;
@@ -129,8 +145,35 @@ export function subscribeToThreadMessages(
             }
           }
         },
-      )
-      .subscribe();
+      );
+
+    state.channel = newChannel;
+
+    newChannel.subscribe((status: string, err?: Error) => {
+      // SUBSCRIBED is the only success state — all others are either
+      // transient-and-handled-by-transport (no-op here) or terminal.
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        // Only react if this is still the live channel — if a later
+        // subscribe already replaced it, leave that one alone.
+        if (state.channel === newChannel) {
+          console.error(
+            '[messagesChannel] subscribe failed: status=%s err=%s',
+            status,
+            err?.message ?? '(none)',
+          );
+          try {
+            client.removeChannel(newChannel);
+          } catch {
+            // removeChannel can throw if the channel is already torn down;
+            // swallow since we're in recovery path.
+          }
+          state.channel = null;
+          // Keep listener registrations + refCount intact — the next
+          // subscribeToThreadMessages call will notice channel is null
+          // and open a fresh one.
+        }
+      }
+    });
   }
 
   // ---- 3. Return teardown ------------------------------------------------

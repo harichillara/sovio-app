@@ -12,35 +12,61 @@ import {
 // ---------------------------------------------------------------------------
 
 type PgHandler = (payload: { new?: MessageRow | null }) => void;
+type StatusCallback = (status: string, err?: Error) => void;
 
 function makeFakeClient() {
-  let handler: PgHandler | null = null;
-  let subscribed = false;
+  // Each channel created by .channel() gets its own handler/status cb so
+  // tests that open a second channel after a CHANNEL_ERROR can still
+  // route emits to the current one.
+  const channels: Array<{
+    handler: PgHandler | null;
+    statusCb: StatusCallback | null;
+    api: {
+      on: ReturnType<typeof vi.fn>;
+      subscribe: ReturnType<typeof vi.fn>;
+    };
+  }> = [];
 
-  const channelApi = {
-    on: vi.fn((_event: string, _opts: unknown, cb: PgHandler) => {
-      handler = cb;
-      return channelApi;
-    }),
-    subscribe: vi.fn(() => {
-      subscribed = true;
-      return channelApi;
-    }),
-  };
+  function makeChannel() {
+    const rec: (typeof channels)[number] = {
+      handler: null,
+      statusCb: null,
+      // cast-through — vi.fn typing is noisy
+      api: null as never,
+    };
+    const api = {
+      on: vi.fn((_event: string, _opts: unknown, cb: PgHandler) => {
+        rec.handler = cb;
+        return api;
+      }),
+      subscribe: vi.fn((cb?: StatusCallback) => {
+        rec.statusCb = cb ?? null;
+        return api;
+      }),
+    };
+    rec.api = api;
+    channels.push(rec);
+    return api;
+  }
 
   const client = {
-    channel: vi.fn(() => channelApi),
+    channel: vi.fn(() => makeChannel()),
     removeChannel: vi.fn(),
   };
 
   return {
     client,
-    channelApi,
+    channels,
     emit(row: MessageRow | null) {
-      if (!handler) throw new Error('No handler registered');
-      handler({ new: row });
+      const current = channels[channels.length - 1];
+      if (!current?.handler) throw new Error('No handler registered');
+      current.handler({ new: row });
     },
-    isSubscribed: () => subscribed,
+    fireStatus(status: string, err?: Error, index = channels.length - 1) {
+      const rec = channels[index];
+      if (!rec?.statusCb) throw new Error('No status cb registered');
+      rec.statusCb(status, err);
+    },
   };
 }
 
@@ -163,5 +189,97 @@ describe('subscribeToThreadMessages', () => {
     unsub();
     unsub();
     expect(h.client.removeChannel).toHaveBeenCalledTimes(1);
+  });
+
+  // ---------- F1: status-callback recovery paths ----------
+
+  it('on CHANNEL_ERROR tears down the dead channel and next subscribe opens a fresh one', () => {
+    const h = makeFakeClient();
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const onT1 = vi.fn();
+    subscribeToThreadMessages(h.client as never, 't1', { onInsert: onT1 });
+    expect(h.client.channel).toHaveBeenCalledTimes(1);
+
+    // Simulate Supabase reporting a subscription failure.
+    h.fireStatus('CHANNEL_ERROR', new Error('RLS rejected'));
+
+    expect(h.client.removeChannel).toHaveBeenCalledTimes(1);
+    expect(__getMessagesChannelStateForTests().hasChannel).toBe(false);
+    // But the listener registration is intact — refCount still 1 — so
+    // the app doesn't lose its subscription intent.
+    expect(__getMessagesChannelStateForTests().refCount).toBe(1);
+
+    // A fresh subscribe call should bootstrap a NEW channel (the
+    // previous one being null triggers the lazy-create branch).
+    subscribeToThreadMessages(h.client as never, 't2', { onInsert: vi.fn() });
+    expect(h.client.channel).toHaveBeenCalledTimes(2);
+    expect(__getMessagesChannelStateForTests().hasChannel).toBe(true);
+
+    err.mockRestore();
+  });
+
+  it.each(['TIMED_OUT', 'CLOSED'])(
+    'treats %s the same as CHANNEL_ERROR (terminal)',
+    (status) => {
+      const h = makeFakeClient();
+      const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      subscribeToThreadMessages(h.client as never, 't1', { onInsert: vi.fn() });
+      h.fireStatus(status);
+
+      expect(h.client.removeChannel).toHaveBeenCalledTimes(1);
+      expect(__getMessagesChannelStateForTests().hasChannel).toBe(false);
+
+      err.mockRestore();
+    },
+  );
+
+  it('SUBSCRIBED status is a no-op — channel stays live', () => {
+    const h = makeFakeClient();
+    subscribeToThreadMessages(h.client as never, 't1', { onInsert: vi.fn() });
+
+    h.fireStatus('SUBSCRIBED');
+
+    expect(h.client.removeChannel).not.toHaveBeenCalled();
+    expect(__getMessagesChannelStateForTests().hasChannel).toBe(true);
+  });
+
+  it('a stale status callback from a replaced channel is ignored', () => {
+    const h = makeFakeClient();
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    subscribeToThreadMessages(h.client as never, 't1', { onInsert: vi.fn() });
+    // Force a new channel: error on the first one, then subscribe again.
+    h.fireStatus('CHANNEL_ERROR');
+    subscribeToThreadMessages(h.client as never, 't2', { onInsert: vi.fn() });
+    expect(h.client.channel).toHaveBeenCalledTimes(2);
+
+    // Now fire a late CHANNEL_ERROR from the FIRST channel — the
+    // handler must recognize it's no longer `state.channel` and not
+    // tear down the current one.
+    h.fireStatus('CHANNEL_ERROR', undefined, 0);
+
+    // Still exactly one removeChannel from the original teardown —
+    // the stale callback must NOT have triggered another.
+    expect(h.client.removeChannel).toHaveBeenCalledTimes(1);
+    expect(__getMessagesChannelStateForTests().hasChannel).toBe(true);
+
+    err.mockRestore();
+  });
+
+  it('tolerates removeChannel throwing inside the status recovery path', () => {
+    const h = makeFakeClient();
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    h.client.removeChannel.mockImplementationOnce(() => {
+      throw new Error('already torn down');
+    });
+
+    subscribeToThreadMessages(h.client as never, 't1', { onInsert: vi.fn() });
+
+    expect(() => h.fireStatus('CHANNEL_ERROR')).not.toThrow();
+    expect(__getMessagesChannelStateForTests().hasChannel).toBe(false);
+
+    err.mockRestore();
   });
 });
