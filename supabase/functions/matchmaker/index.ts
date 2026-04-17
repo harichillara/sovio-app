@@ -1,6 +1,35 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import * as Sentry from 'https://deno.land/x/sentry@7.120.3/index.mjs';
+import { createRequestLogger } from '../_shared/logger.ts';
+import { parseJson, z } from '../_shared/validate.ts';
+
+// Body schema: userId + either a bucket (time-of-day label) OR coords (lat/lng)
+// required. Cross-field requirement is enforced via refine() so the 400 error
+// mirrors the previous ad-hoc check: "userId plus bucket or coords required".
+const MatchmakerSchema = z
+  .object({
+    userId: z.string().uuid(),
+    bucket: z.string().min(1).max(64).optional(),
+    category: z.string().min(1).max(64).optional(),
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
+  })
+  .refine(
+    (v) => !!v.bucket || (v.lat != null && v.lng != null),
+    { message: 'bucket or coords (lat+lng) required', path: ['bucket'] },
+  );
+
+const SENTRY_DSN = Deno.env.get('SENTRY_DSN') ?? '';
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    tracesSampleRate: 0.1,
+    environment: Deno.env.get('SENTRY_ENVIRONMENT') ?? 'production',
+  });
+  Sentry.setTag('fn', 'matchmaker');
+}
 
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -52,14 +81,15 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const logger = createRequestLogger('matchmaker');
+
   try {
-    const { userId, bucket, category, lat, lng } = await req.json();
-    if (!userId || (!bucket && (lat == null || lng == null))) {
-      return new Response(
-        JSON.stringify({ error: 'userId plus bucket or coords required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+    const parsed = await parseJson(req, MatchmakerSchema, corsHeaders);
+    if (!parsed.ok) {
+      logger.warn('validation_failed', { issue_count: parsed.issues.length });
+      return parsed.response;
     }
+    const { userId, bucket, category, lat, lng } = parsed.data;
 
     await authenticateUser(req, userId);
 
@@ -193,7 +223,7 @@ serve(async (req) => {
         },
       });
     } catch (pushErr) {
-      console.error(`Failed to send match push to ${match.user_id}:`, pushErr);
+      logger.child({ user_id: match.user_id }).error('match_push_failed', { err: pushErr });
     }
 
     return new Response(
@@ -206,7 +236,8 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err: any) {
-    console.error('matchmaker error:', err);
+    logger.error('unhandled_error', { err });
+    if (SENTRY_DSN) Sentry.captureException(err);
     const status = err instanceof HttpError ? err.status : 500;
     return new Response(
       JSON.stringify({ error: err.message ?? 'Internal error' }),

@@ -1,0 +1,15 @@
+{
+  "tasks": {
+    "test": "deno test --allow-env --allow-net --allow-read _shared/ ai-generate/ billing-webhook/ intent-refresh/ matchmaker/ moderation/ notify/"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "fmt": {
+    "indentWidth": 2,
+    "singleQuote": true,
+    "semiColons": true
+  }
+}
