@@ -1,5 +1,6 @@
 import { supabase } from '../supabase/client';
 import type { Json } from '../supabase/database.types';
+import { eventBuffer } from '../analytics/eventBuffer';
 
 // ---------------------------------------------------------------------------
 // Event type constants
@@ -54,6 +55,16 @@ export interface AppEvent {
 
 /**
  * Track a user event.
+ *
+ * Events are buffered client-side and flushed as a batch (see
+ * `analytics/eventBuffer.ts`) to cut write contention on the `app_events`
+ * table. Buffered inserts are best-effort — a network failure drops the
+ * batch rather than retrying forever. If you need a synchronous guarantee
+ * (e.g. right before sign-out), call `flushEvents()`.
+ *
+ * The signature is preserved for backward compatibility with callers that
+ * still `await trackEvent(...)`. The returned promise resolves immediately
+ * after buffering — it does NOT wait for the batch to hit the server.
  */
 export async function trackEvent(
   userId: string,
@@ -61,14 +72,20 @@ export async function trackEvent(
   payload?: Json,
   source?: string,
 ): Promise<void> {
-  const { error } = await supabase.from('app_events').insert({
+  eventBuffer.track({
     user_id: userId,
     event_type: eventType,
     payload: payload ?? null,
     source: source ?? 'mobile',
   });
+}
 
-  if (error) throw error;
+/**
+ * Force an immediate flush of the in-memory event buffer. Useful right
+ * before sign-out or when the app knows it is about to terminate.
+ */
+export async function flushEvents(): Promise<void> {
+  await eventBuffer.flush();
 }
 
 /**
