@@ -5,6 +5,7 @@ import * as Sentry from 'https://deno.land/x/sentry@7.120.3/index.mjs';
 import { createRequestLogger } from '../_shared/logger.ts';
 import { z } from '../_shared/validate.ts';
 import { verifyStripeSignature } from '../_shared/stripe-verify.ts';
+import { scrubSentryEvent } from '../_shared/sentry-scrubber.ts';
 
 // Stripe event-shape schemas. Applied AFTER signature verification — we can't
 // parse/transform the body before HMAC because the signature is over the exact
@@ -41,6 +42,9 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     tracesSampleRate: 0.1,
     environment: Deno.env.get('SENTRY_ENVIRONMENT') ?? 'production',
+    // Stripe payloads carry secrets (webhook signatures, customer emails,
+    // payment_intent IDs). Scrub aggressively before anything leaves.
+    beforeSend: (event: unknown) => scrubSentryEvent(event),
   });
   Sentry.setTag('fn', 'billing-webhook');
 }

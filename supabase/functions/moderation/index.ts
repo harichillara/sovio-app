@@ -5,6 +5,7 @@ import * as Sentry from 'https://deno.land/x/sentry@7.120.3/index.mjs';
 import { createRequestLogger } from '../_shared/logger.ts';
 import { parseJson, z } from '../_shared/validate.ts';
 import { sanitizeUserInput, wrapUntrusted, INJECTION_DEFENSE_HEADER } from '../_shared/prompt-safety.ts';
+import { scrubSentryEvent } from '../_shared/sentry-scrubber.ts';
 
 // Body schema cross-checked against the handler: uses `content` (free-form
 // user text fed to Gemini — capped at 4000 to prevent prompt-bloat DoS),
@@ -22,6 +23,9 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     tracesSampleRate: 0.1,
     environment: Deno.env.get('SENTRY_ENVIRONMENT') ?? 'production',
+    // Moderation handler logs raw user content on errors. Scrub hard so
+    // user bios + chat messages don't show up verbatim in Sentry.
+    beforeSend: (event: unknown) => scrubSentryEvent(event),
   });
   Sentry.setTag('fn', 'moderation');
 }

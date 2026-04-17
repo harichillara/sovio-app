@@ -3,7 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Sentry from '@sentry/react-native';
 import { ThemeProvider, useTheme } from '@sovio/tokens/ThemeContext';
-import { QueryProvider, AuthProvider, RealtimeProvider, useAuthStore } from '@sovio/core';
+import { QueryProvider, AuthProvider, RealtimeProvider, useAuthStore, scrubSentryEvent } from '@sovio/core';
 import { LoadingOverlay, ErrorBoundary } from '@sovio/ui';
 import 'react-native-url-polyfill/auto';
 
@@ -17,6 +17,10 @@ Sentry.init({
   dsn: SENTRY_DSN,
   enabled: !!SENTRY_DSN,
   tracesSampleRate: 0.1,
+  // Strip PII and secrets before leaving device. Catches Stripe keys,
+  // JWTs, Bearer headers, and email local-parts across all event fields.
+  beforeSend: (event) => scrubSentryEvent(event),
+  beforeSendTransaction: (event) => scrubSentryEvent(event),
 });
 
 function RouteGuard() {

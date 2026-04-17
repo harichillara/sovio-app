@@ -5,6 +5,7 @@ import * as Sentry from 'https://deno.land/x/sentry@7.120.3/index.mjs';
 import { createRequestLogger, Logger } from '../_shared/logger.ts';
 import { parseJson, z } from '../_shared/validate.ts';
 import { sanitizeUserInput, wrapUntrusted, INJECTION_DEFENSE_HEADER } from '../_shared/prompt-safety.ts';
+import { scrubSentryEvent } from '../_shared/sentry-scrubber.ts';
 
 // Body schema: { userId, includePredictHQ?, coords? }. Cross-checked against
 // refreshIntent(): userId is required, includePredictHQ defaults to true at the
@@ -26,6 +27,9 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     tracesSampleRate: 0.1,
     environment: Deno.env.get('SENTRY_ENVIRONMENT') ?? 'production',
+    // Scrub PII + secrets. Intent-refresh handles user coords + PredictHQ API
+    // key — neither should hit Sentry if an error path echoes them.
+    beforeSend: (event: unknown) => scrubSentryEvent(event),
   });
   Sentry.setTag('fn', 'intent-refresh');
 }

@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import * as Sentry from 'https://deno.land/x/sentry@7.120.3/index.mjs';
 import { createRequestLogger } from '../_shared/logger.ts';
 import { parseJson, z } from '../_shared/validate.ts';
+import { scrubSentryEvent } from '../_shared/sentry-scrubber.ts';
 
 // Body schema: userId + either a bucket (time-of-day label) OR coords (lat/lng)
 // required. Cross-field requirement is enforced via refine() so the 400 error
@@ -27,6 +28,7 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     tracesSampleRate: 0.1,
     environment: Deno.env.get('SENTRY_ENVIRONMENT') ?? 'production',
+    beforeSend: (event: unknown) => scrubSentryEvent(event),
   });
   Sentry.setTag('fn', 'matchmaker');
 }

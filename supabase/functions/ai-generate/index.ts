@@ -5,6 +5,7 @@ import * as Sentry from 'https://deno.land/x/sentry@7.120.3/index.mjs';
 import { createRequestLogger, Logger } from '../_shared/logger.ts';
 import { parseJson, z } from '../_shared/validate.ts';
 import { sanitizeUserInput, wrapUntrusted, INJECTION_DEFENSE_HEADER } from '../_shared/prompt-safety.ts';
+import { scrubSentryEvent } from '../_shared/sentry-scrubber.ts';
 import { getLLMClient, LLMError } from '../_shared/llm/index.ts';
 import { AiGenerateBodySchema, type AiGenerateBody } from './schemas.ts';
 import {
@@ -39,6 +40,10 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     tracesSampleRate: 0.1,
     environment: Deno.env.get('SENTRY_ENVIRONMENT') ?? 'production',
+    // Strip PII + secrets before events leave the edge. Catches Stripe keys,
+    // JWTs, Bearer headers, emails, and long hex blobs across all event
+    // fields (request, breadcrumbs, exception, message, extra).
+    beforeSend: (event: unknown) => scrubSentryEvent(event),
   });
   Sentry.setTag('fn', 'ai-generate');
 }

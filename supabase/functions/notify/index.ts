@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import * as Sentry from 'https://deno.land/x/sentry@7.120.3/index.mjs';
 import { createRequestLogger, Logger } from '../_shared/logger.ts';
 import { parseJson, z } from '../_shared/validate.ts';
+import { scrubSentryEvent } from '../_shared/sentry-scrubber.ts';
 
 // Body shape matches sendPushDirect in _shared/notify-helper.ts plus the
 // optional notificationId passthrough from notify_insert_and_push. All fields
@@ -24,6 +25,9 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     tracesSampleRate: 0.1,
     environment: Deno.env.get('SENTRY_ENVIRONMENT') ?? 'production',
+    // Push payload bodies carry user-visible text. Strip emails/keys before
+    // anything gets emitted on an Expo push failure path.
+    beforeSend: (event: unknown) => scrubSentryEvent(event),
   });
   Sentry.setTag('fn', 'notify');
 }

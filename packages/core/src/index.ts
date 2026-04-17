@@ -70,3 +70,6 @@ export * from './hooks/useFeatureFlags';
 export { QueryProvider, queryClient } from './providers/QueryProvider';
 export { AuthProvider } from './providers/AuthProvider';
 export { RealtimeProvider } from './providers/RealtimeProvider';
+
+// Observability
+export { scrubSentryEvent, scrubString, scrubValue } from './observability/sentryScrubber';
