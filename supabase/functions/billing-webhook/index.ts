@@ -52,7 +52,21 @@ const supabase = createClient(
 
 // Stripe webhook secret — will be set when Stripe goes live
 const STRIPE_WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '';
-const STRIPE_READY = false;
+// Default off: absent env var, empty string, or any value other than the
+// literal "true" keeps us on the staged path. Flipping requires an explicit
+// opt-in via `supabase secrets set STRIPE_READY=true` after go-live.
+let STRIPE_READY = Deno.env.get('STRIPE_READY') === 'true';
+
+// Fail-safe: never run the live path without a webhook secret. If the operator
+// set STRIPE_READY=true but forgot (or mis-spelled) STRIPE_WEBHOOK_SECRET,
+// force back to staged mode so we don't accept unverified webhook payloads.
+if (STRIPE_READY && !STRIPE_WEBHOOK_SECRET) {
+  const bootLogger = createRequestLogger('billing-webhook');
+  bootLogger.error('stripe_ready_without_secret', {
+    message: 'STRIPE_READY=true but STRIPE_WEBHOOK_SECRET is empty — forcing staged mode',
+  });
+  STRIPE_READY = false;
+}
 
 // Signature verification lives in `../_shared/stripe-verify.ts` so it can be
 // unit-tested without spinning up this module's DB + Sentry side effects.
