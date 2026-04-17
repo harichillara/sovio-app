@@ -605,7 +605,7 @@ Return ONLY valid JSON.`;
   };
 }
 
-async function handleDecisionProposal(body: any) {
+async function handleDecisionProposal(body: any, logger: Logger) {
   const { userId, constraints } = body;
   if (!userId) throw new Error('userId required');
 
@@ -627,7 +627,9 @@ async function handleDecisionProposal(body: any) {
     ...groupSizeRes.flags,
   ];
   if (allFlags.length) {
-    logger.child({ user_id: userId, op: 'decision_proposal' }).warn(
+    // logger is already scoped to { user_id, op: 'decision_proposal' } by
+    // the caller (see the case in serve() below). No need to re-child.
+    logger.warn(
       'injection_attempt_sanitized',
       { fields: ['budget', 'maxTravel', 'preferredTimes', 'groupSize'], flags: allFlags },
     );
@@ -1194,7 +1196,7 @@ serve(async (req) => {
       case 'decision_proposal': {
         const user = await authenticateUser(req, body.userId);
         const userLogger = logger.child({ user_id: user.id, op });
-        const outcome = await enforceQuotaAndRun(user.id, userLogger, corsHeaders, () => handleDecisionProposal(body));
+        const outcome = await enforceQuotaAndRun(user.id, userLogger, corsHeaders, () => handleDecisionProposal(body, userLogger));
         if ('response' in outcome) return outcome.response;
         result = outcome.result;
         rateHeaders = outcome.headers;
