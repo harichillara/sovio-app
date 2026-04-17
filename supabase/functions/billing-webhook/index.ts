@@ -129,6 +129,36 @@ serve(async (req) => {
       );
     }
 
+    // Idempotency claim. Stripe delivery is at-least-once — retries from
+    // their side, manual "Resend" from the dashboard, or a worker crash
+    // between "applied the update" and "returned 200" would all re-deliver
+    // the same event.id. We INSERT here as our *first* DB write after
+    // signature verification. The PK on event_id means exactly one concurrent
+    // delivery wins the race; duplicates get zero rows back and short-circuit.
+    //
+    // We return 200 on duplicate (not 409) because Stripe treats 2xx as
+    // "delivered, stop retrying" — which is what we want. A 4xx here would
+    // make Stripe keep retrying a duplicate it already delivered successfully.
+    const claim = await supabase
+      .from('processed_stripe_events')
+      .insert({ event_id: event.id, event_type: event.type })
+      .select('event_id');
+
+    if (claim.error) {
+      // Unique-violation means another worker already claimed this event.
+      // Postgres error code 23505 is unique_violation. Any other error is
+      // a real DB fault — re-raise so the top-level catch returns 500 and
+      // Stripe retries.
+      if ((claim.error as any).code === '23505') {
+        logger.info('duplicate_event_ignored', { event_id: event.id, event_type: event.type });
+        return new Response(
+          JSON.stringify({ received: true, duplicate: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+      throw claim.error;
+    }
+
     let processed = false;
 
     switch (event.type) {
