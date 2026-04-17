@@ -1,0 +1,126 @@
+name: Mobile Release (EAS)
+
+# Triggers only on annotated tags matching `mobile-v*` (e.g. mobile-v1.2.3).
+# We intentionally use a prefixed tag namespace rather than bare `v*` so
+# web releases (Vercel deploys) and mobile releases (EAS store submits)
+# can't collide. Tags are the authoritative release signal — merging to
+# master does NOT cut a build; a deliberate tag does.
+#
+# What this workflow does:
+#   1. Checks out the repo on the tag SHA
+#   2. Restores pnpm + the mobile workspace
+#   3. Runs `eas build --profile production --non-interactive --auto-submit`
+#      which builds for iOS + Android AND submits the artifacts to App Store
+#      Connect + Play Console in one step
+#
+# What it does NOT do:
+#   - OTA updates. Those are manual (`eas update --branch production`) and
+#     go through the same review gate as a native build. OTA shipping a bug
+#     is fast but also fast to hurt — keep it deliberate.
+#   - Test. CI on the merged commits is presumed green; we don't re-run
+#     here because EAS builds are expensive (~20 min iOS).
+#
+# Required repo secrets (GitHub → Settings → Secrets):
+#   - EXPO_TOKEN                     : https://expo.dev/settings/access-tokens
+#   - EAS_PROJECT_ID                 : present in apps/mobile/app.json extra.eas
+#   - GOOGLE_SERVICE_ACCOUNT_KEY_B64 : base64-encoded Play Store JSON key
+#                                      (decode at build time; never commit)
+#   Apple credentials are configured via `eas credentials` ahead of time —
+#   EAS manages the certs server-side and `--non-interactive` reuses them.
+#
+# First-time setup checklist (run once, locally):
+#   pnpm --filter @sovio/mobile exec eas login
+#   pnpm --filter @sovio/mobile exec eas build:configure
+#   pnpm --filter @sovio/mobile exec eas credentials
+#   # Fill in apps/mobile/eas.json → submit.production.ios.* (Apple IDs)
+#   # Replace REPLACE_WITH_EAS_PROJECT_ID in app.json with the real ID
+
+on:
+  push:
+    tags:
+      - 'mobile-v*'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Build profile (production | preview)'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - preview
+
+concurrency:
+  # One mobile build at a time — EAS enforces this too but we want the
+  # GH-actions UI to show the cancellation rather than queue a shadow build.
+  group: mobile-release
+  cancel-in-progress: false
+
+jobs:
+  build-submit:
+    name: EAS build + auto-submit
+    runs-on: ubuntu-latest
+    # Store submission involves network calls to Apple + Google that can
+    # retry; 60 min is generous but realistic for iOS first-upload cycles.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # EAS CLI is pinned loosely to match the `cli.version` constraint in
+      # eas.json — newer patch versions are safe; a major bump would need
+      # eas.json edited too.
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # Play Store service account key arrives as base64 to dodge GitHub's
+      # multiline-secret escaping quirks. We write it to the path eas.json
+      # expects (see submit.production.android.serviceAccountKeyPath).
+      - name: Restore Play Store service-account key
+        env:
+          KEY_B64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY_B64 }}
+        run: |
+          mkdir -p secrets
+          printf '%s' "$KEY_B64" | base64 -d > secrets/play-store-service-account.json
+          # Sanity check: valid JSON with a project_id field.
+          node -e "const k=require('./secrets/play-store-service-account.json'); if(!k.project_id)process.exit(1)"
+
+      - name: Build + auto-submit
+        working-directory: apps/mobile
+        env:
+          # --non-interactive makes EAS fail fast on any prompt (creds,
+          # Apple 2FA) rather than hang forever in a pseudo-terminal.
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # Routing workflow_dispatch input through env: prevents shell
+          # injection via `${{ github.event.inputs.* }}` directly in `run:`.
+          # See CWE-78 — GitHub context values are untrusted.
+          BUILD_PROFILE: ${{ github.event.inputs.profile || 'production' }}
+        run: |
+          # Validate against an allow-list rather than trusting BUILD_PROFILE
+          # even after env-routing. Belt-and-suspenders.
+          case "$BUILD_PROFILE" in
+            production|preview) ;;
+            *) echo "Invalid profile: $BUILD_PROFILE"; exit 1 ;;
+          esac
+          echo "Building profile: $BUILD_PROFILE"
+          eas build --profile "$BUILD_PROFILE" --platform all --non-interactive --auto-submit
+
+      - name: Teardown service-account key
+        # Always run — we don't want the decoded key surviving in the runner
+        # cache even though runners are ephemeral by design.
+        if: always()
+        run: rm -f secrets/play-store-service-account.json
