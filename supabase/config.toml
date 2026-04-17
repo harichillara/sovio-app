@@ -1,0 +1,4 @@
+project_id = "kfqjapikievrgmszrimw"
+
+[functions.intent-refresh]
+verify_jwt = false
