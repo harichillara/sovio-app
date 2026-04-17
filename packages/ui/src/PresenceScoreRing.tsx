@@ -21,7 +21,11 @@ export function PresenceScoreRing({
   const progressDegrees = Math.max(0, Math.min(360, Math.round(progress * 360)));
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
+    <View
+      style={[styles.container, { width: size, height: size }]}
+      accessibilityLabel={`Presence score ${clamped} of ${maxScore}`}
+      accessibilityRole="image"
+    >
       {Platform.OS === 'web' ? (
         <View
           style={[
@@ -39,8 +43,13 @@ export function PresenceScoreRing({
               StyleSheet.absoluteFillObject,
               {
                 borderRadius: size / 2,
-                backgroundImage: `conic-gradient(${theme.accent} 0deg ${progressDegrees}deg, ${theme.border} ${progressDegrees}deg 360deg)`,
-              } as any,
+              },
+              Platform.select({
+                web: {
+                  backgroundImage: `conic-gradient(${theme.accent} 0deg ${progressDegrees}deg, ${theme.border} ${progressDegrees}deg 360deg)`,
+                } as Record<string, string>,
+                default: {},
+              }),
             ]}
           />
           <View

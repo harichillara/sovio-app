@@ -28,7 +28,7 @@ export default function HomeTab() {
   const { theme } = useTheme();
 
   // Data
-  const { data: suggestions = [], isLoading } = useSuggestions();
+  const { data: suggestions = [] } = useSuggestions();
   const refreshSuggestions = useRefreshSuggestions();
   const { data: entitlement } = useEntitlement();
   const { data: presenceDay } = usePresenceScore();

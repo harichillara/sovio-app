@@ -1,6 +1,5 @@
 import type {
   AuthChangeEvent,
-  AuthSession,
   OAuthResponse,
   Session,
 } from '@supabase/supabase-js';
@@ -100,7 +99,7 @@ export function getGoogleOAuthRedirectUrl() {
   if (Platform.OS === 'web') {
     const origin =
       typeof globalThis !== 'undefined'
-        ? ((globalThis as any).location?.origin as string | undefined)
+        ? (globalThis as typeof globalThis & { location?: { origin: string } }).location?.origin
         : undefined;
     return origin ? `${origin}/callback` : makeRedirectUri({ scheme: 'sovio', path: 'callback' });
   }

@@ -7,10 +7,13 @@
     "dev": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "analyze": "cross-env EXPO_ATLAS=true expo export --platform all --dump-sourcemap",
+    "analyze:open": "expo-atlas"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
+    "@sentry/react-native": "^5.24.0",
     "@sovio/core": "workspace:*",
     "@sovio/tokens": "workspace:*",
     "@sovio/ui": "workspace:*",
@@ -40,6 +43,8 @@
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@types/react": "~18.2.0",
+    "cross-env": "^7.0.3",
+    "expo-atlas": "^0.3.0",
     "typescript": "^5.4.0"
   }
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, Button, LoadingOverlay, MiniActionCard } from '@sovio/ui';
@@ -60,7 +61,7 @@ export default function NotificationSettingsScreen() {
       }).catch((e) => console.warn('analytics:', e));
     }
 
-    router.push(item.route as any);
+    router.push(item.route as Href);
   };
 
   const handleMarkAllRead = () => {

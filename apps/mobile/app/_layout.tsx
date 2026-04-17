@@ -1,10 +1,23 @@
 import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Sentry from '@sentry/react-native';
 import { ThemeProvider, useTheme } from '@sovio/tokens/ThemeContext';
 import { QueryProvider, AuthProvider, RealtimeProvider, useAuthStore } from '@sovio/core';
-import { LoadingOverlay } from '@sovio/ui';
+import { LoadingOverlay, ErrorBoundary } from '@sovio/ui';
 import 'react-native-url-polyfill/auto';
+
+// ---------------------------------------------------------------------------
+// Sentry — gated on EXPO_PUBLIC_SENTRY_DSN. Unset in local dev / CI means
+// `enabled: false` and Sentry becomes a no-op. Native crash reporting requires
+// a dev build (EAS or `expo prebuild`); Expo Go only captures JS errors.
+// ---------------------------------------------------------------------------
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+Sentry.init({
+  dsn: SENTRY_DSN,
+  enabled: !!SENTRY_DSN,
+  tracesSampleRate: 0.1,
+});
 
 function RouteGuard() {
   const { mode } = useTheme();
@@ -65,16 +78,26 @@ function RouteGuard() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
-    <ThemeProvider>
-      <QueryProvider>
-        <AuthProvider>
-          <RealtimeProvider>
-            <RouteGuard />
-          </RealtimeProvider>
-        </AuthProvider>
-      </QueryProvider>
-    </ThemeProvider>
+    <ErrorBoundary
+      onError={(err, info) =>
+        Sentry.captureException(err, {
+          contexts: { react: { componentStack: info.componentStack ?? '' } },
+        })
+      }
+    >
+      <ThemeProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <RealtimeProvider>
+              <RouteGuard />
+            </RealtimeProvider>
+          </AuthProvider>
+        </QueryProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
+
+export default Sentry.wrap(RootLayout);

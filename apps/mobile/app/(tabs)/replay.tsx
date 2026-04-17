@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { TabScreen, MiniActionCard, EmptyState, LoadingOverlay } from '@sovio/ui';
 import { useAuthStore, useIsPro, eventsService, supabase } from '@sovio/core';
+import type { MissedMoment } from '@sovio/core';
 import { useQuery } from '@tanstack/react-query';
 import { TopRightActions } from '../../components/TopRightActions';
 
@@ -93,7 +94,7 @@ export default function ReplayTab() {
           body="You're living it. When you skip a plan or miss a moment, it shows up here for another shot."
         />
       ) : (
-        items.map((item: any) => {
+        items.map((item: MissedMoment) => {
           return (
             <MiniActionCard
               key={item.id}

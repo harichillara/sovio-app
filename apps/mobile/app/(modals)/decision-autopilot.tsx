@@ -13,13 +13,14 @@ import { AppScreen, Button, PillChip, EmptyState } from '@sovio/ui';
 import { TextInput as RNTextInput } from 'react-native';
 import {
   useAuthStore,
-  supabase,
   useAutopilotRules,
   useSetRule,
   useProposals,
   useApproveProposal,
   useRejectProposal,
+  aiService,
 } from '@sovio/core';
+import type { AIProposal } from '@sovio/core';
 
 const TIME_OPTIONS = ['Morning', 'Afternoon', 'Evening', 'Night'];
 const GROUP_OPTIONS = ['Solo', '2-3', '4-6', 'Any'];
@@ -28,7 +29,7 @@ export default function DecisionAutopilotScreen() {
   const { theme } = useTheme();
   const userId = useAuthStore((s) => s.user?.id);
 
-  const { data: rules, isLoading: rulesLoading } = useAutopilotRules();
+  const { data: rules } = useAutopilotRules();
   const setRuleMutation = useSetRule();
   const { data: proposals, isLoading: proposalsLoading } = useProposals();
   const approveMutation = useApproveProposal();
@@ -97,21 +98,23 @@ export default function DecisionAutopilotScreen() {
     if (!userId) return;
     setGenerating(true);
     try {
-      await supabase.functions.invoke('ai-generate', {
-        body: {
-          op: 'decision_proposal',
-          userId,
-          constraints: {
-            budget,
-            maxTravel,
-            preferredTimes: selectedTimes,
-            groupSize: selectedGroup,
-          },
+      await aiService.invokeAIGenerate({
+        op: 'decision_proposal',
+        userId,
+        constraints: {
+          budget,
+          maxTravel,
+          preferredTimes: selectedTimes,
+          groupSize: selectedGroup,
         },
       });
       Alert.alert('Generating', 'A new proposal is being generated. Check back shortly!');
-    } catch {
-      Alert.alert('Error', 'Could not generate proposal.');
+    } catch (err) {
+      if (err instanceof aiService.QuotaExceededError) {
+        Alert.alert('Daily AI limit reached', 'Upgrade to Pro for more AI proposals.');
+      } else {
+        Alert.alert('Error', 'Could not generate proposal.');
+      }
     } finally {
       setGenerating(false);
     }
@@ -275,7 +278,7 @@ export default function DecisionAutopilotScreen() {
             />
           )}
 
-          {proposalList.map((proposal: any) => {
+          {proposalList.map((proposal: AIProposal) => {
             const result = proposal.result ?? {};
             return (
               <View

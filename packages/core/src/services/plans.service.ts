@@ -111,11 +111,33 @@ export async function respondToInvite(
 }
 
 export async function getSuggestedPlans(userId: string) {
+  // Fetch accepted friend IDs (bidirectional relationship)
+  const [{ data: asUser }, { data: asFriend }] = await Promise.all([
+    supabase
+      .from('friendships')
+      .select('friend_id')
+      .eq('user_id', userId)
+      .eq('status', 'accepted'),
+    supabase
+      .from('friendships')
+      .select('user_id')
+      .eq('friend_id', userId)
+      .eq('status', 'accepted'),
+  ]);
+
+  const friendIds = [
+    ...(asUser ?? []).map((f) => f.friend_id),
+    ...(asFriend ?? []).map((f) => f.user_id),
+  ];
+
+  if (friendIds.length === 0) return [];
+
   const { data, error } = await supabase
     .from('plans')
     .select('*')
     .eq('status', 'active')
     .neq('creator_id', userId)
+    .in('creator_id', friendIds)
     .order('created_at', { ascending: false })
     .limit(5);
   if (error) throw error;

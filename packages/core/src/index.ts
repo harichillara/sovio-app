@@ -1,5 +1,4 @@
-// Brand & onboarding
-export * from './brand';
+// Onboarding
 export * from './onboarding';
 
 // Supabase client & types
@@ -7,10 +6,10 @@ export { supabase } from './supabase/client';
 export type * from './supabase/types';
 export type * from './supabase/app-types';
 
-// AI foundation
-export type * from './ai/llm-client';
-export { GeminiClient } from './ai/gemini-client';
-export * from './ai/context-builder';
+// Service types used by screens
+export type { ThreadWithMeta } from './services/messages.service';
+export { THREADS_PAGE_SIZE } from './services/messages.service';
+export type { AIProposal } from './services/autopilot.service';
 
 // Services
 export * as authService from './services/auth.service';
@@ -25,7 +24,10 @@ export * as suggestionsService from './services/suggestions.service';
 export * as eventsService from './services/events.service';
 export * as presenceService from './services/presence.service';
 export * as momentumService from './services/momentum.service';
-export * as moderationService from './services/moderation.service';
+// moderationService removed — moderation runs server-side in the
+// supabase/functions/moderation edge function. Clients that need to moderate
+// content should call supabase.functions.invoke('moderation', { body: ... }),
+// not ship GEMINI_API_KEY to the client.
 export * as entitlementsService from './services/entitlements.service';
 export * as autopilotService from './services/autopilot.service';
 export {

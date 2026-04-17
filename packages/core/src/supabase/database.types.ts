@@ -338,29 +338,43 @@ export type Database = {
         ];
       };
       ai_jobs: {
+        // Post-unify schema (see 20260416195000_ai_jobs_unify). `kind` is
+        // the discriminator — 'autopilot' for user-facing proposals,
+        // 'queue' for background jobs. `payload` / `result` replace the
+        // earlier `input` / `output` columns.
+        // TODO: regenerate via `supabase gen types` once CI is wired.
         Row: {
           id: string;
           user_id: string;
+          kind: string;
           job_type: string;
           status: string;
+          payload: Json | null;
           result: Json | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
+          kind: string;
           job_type: string;
           status?: string;
+          payload?: Json | null;
           result?: Json | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
+          kind?: string;
           job_type?: string;
           status?: string;
+          payload?: Json | null;
           result?: Json | null;
           created_at?: string;
+          updated_at?: string;
         };
         Relationships: [
           {
@@ -1087,6 +1101,18 @@ export type Database = {
           available_until: string;
           confidence_label: string;
         }[];
+      };
+      // Added in 20260417010000_rls_hardening_pt3. SECURITY DEFINER functions
+      // that flip `status` on the caller's own autopilot rows in ai_jobs.
+      // Clients can't UPDATE ai_jobs directly (no RLS UPDATE policy) — these
+      // RPCs are the only approve/reject path.
+      approve_autopilot_proposal: {
+        Args: { p_job_id: string };
+        Returns: void;
+      };
+      reject_autopilot_proposal: {
+        Args: { p_job_id: string };
+        Returns: void;
       };
     };
     Enums: {

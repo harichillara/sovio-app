@@ -59,10 +59,15 @@ export async function setRule(
  * Get AI-generated proposals for the user (decision type, completed).
  */
 export async function getProposals(userId: string): Promise<AIProposal[]> {
+  // kind='autopilot' scopes this to user-facing proposals. The merged
+  // status CHECK (see 20260416195000_ai_jobs_unify) prevents queue rows
+  // from having status='done', but filtering explicitly makes intent clear
+  // and keeps us safe if the CHECK is ever loosened.
   const { data, error } = await supabase
     .from('ai_jobs')
     .select('*')
     .eq('user_id', userId)
+    .eq('kind', 'autopilot')
     .eq('job_type', 'decision')
     .eq('status', 'done')
     .order('created_at', { ascending: false });
@@ -74,24 +79,32 @@ export async function getProposals(userId: string): Promise<AIProposal[]> {
 /**
  * Approve an AI proposal. Updates status and tracks event.
  *
- * SECURITY: Both jobId AND userId are required in the WHERE clause
- * to prevent one user from mutating another user's proposals.
- * Even with RLS, this defense-in-depth ensures ownership at the app layer.
+ * Goes through the `approve_autopilot_proposal` SECURITY DEFINER RPC (added
+ * in 20260417010000_rls_hardening_pt3): `ai_jobs` has no UPDATE policy for
+ * clients, so direct `.from('ai_jobs').update(...)` is denied by RLS. The
+ * RPC pins ownership + kind + current-status server-side and only allows
+ * flipping `status` — clients cannot mutate `result` / `job_type` / `kind`.
+ *
+ * The `userId` parameter is retained for analytics (trackEvent) only; the
+ * RPC derives the caller from auth.uid(), not from a parameter.
  */
 export async function approveProposal(
   jobId: string,
   userId: string,
 ): Promise<void> {
-  const { data, error } = await supabase
-    .from('ai_jobs')
-    .update({ status: 'approved' })
-    .eq('id', jobId)
-    .eq('user_id', userId)
-    .select('id')
-    .maybeSingle();
+  const { error } = await supabase.rpc('approve_autopilot_proposal', {
+    p_job_id: jobId,
+  });
 
-  if (error) throw error;
-  if (!data) throw new Error('Proposal not found or not owned by user');
+  if (error) {
+    // Postgres P0002 = our "not found or not actionable" raise. Translate to
+    // the same user-visible error shape the old path returned so callers
+    // don't have to special-case.
+    if (error.code === 'P0002') {
+      throw new Error('Proposal not found or not owned by user');
+    }
+    throw error;
+  }
 
   try {
     await trackEvent(userId, EventTypes.AUTOPILOT_APPROVED, { job_id: jobId }, 'autopilot');
@@ -104,22 +117,22 @@ export async function approveProposal(
 /**
  * Reject an AI proposal. Updates status and tracks event.
  *
- * SECURITY: Both jobId AND userId are required in the WHERE clause.
+ * See `approveProposal` — same RPC pattern; only `status` flips.
  */
 export async function rejectProposal(
   jobId: string,
   userId: string,
 ): Promise<void> {
-  const { data, error } = await supabase
-    .from('ai_jobs')
-    .update({ status: 'rejected' })
-    .eq('id', jobId)
-    .eq('user_id', userId)
-    .select('id')
-    .maybeSingle();
+  const { error } = await supabase.rpc('reject_autopilot_proposal', {
+    p_job_id: jobId,
+  });
 
-  if (error) throw error;
-  if (!data) throw new Error('Proposal not found or not owned by user');
+  if (error) {
+    if (error.code === 'P0002') {
+      throw new Error('Proposal not found or not owned by user');
+    }
+    throw error;
+  }
 
   try {
     await trackEvent(userId, EventTypes.AUTOPILOT_REJECTED, { job_id: jobId }, 'autopilot');

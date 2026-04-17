@@ -19,6 +19,8 @@ export function SocialAuthButton({ provider, onPress }: SocialAuthButtonProps) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={[
         styles.button,
         {

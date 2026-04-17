@@ -12,13 +12,14 @@ import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, AppHeader, EmptyState, withAlpha } from '@sovio/ui';
 import { useThreads } from '@sovio/core';
+import type { ThreadWithMeta } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
 import { TopRightActions } from '../../components/TopRightActions';
 
 export default function MessagesTab() {
   const { theme } = useTheme();
-  const { data: threads, isLoading, refetch } = useThreads();
-  const threadList = threads ?? [];
+  const { data, isLoading, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useThreads();
+  const threadList = data?.pages.flat() ?? [];
 
   const handleLongPress = useCallback(
     (threadId: string, threadTitle: string) => {
@@ -52,8 +53,7 @@ export default function MessagesTab() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const renderThread = ({ item: entry }: { item: any }) => {
-    const thread = entry.threads ?? entry;
+  const renderThread = ({ item: entry }: { item: ThreadWithMeta }) => {
     const latestMessage = entry.latest_message;
     const unread = entry.unread_count ?? 0;
     const hasAIDraft = latestMessage?.is_ai_draft === true;
@@ -63,10 +63,10 @@ export default function MessagesTab() {
         onPress={() =>
           router.push({
             pathname: '/(modals)/thread-detail',
-            params: { threadId: thread.id },
+            params: { threadId: entry.id },
           })
         }
-        onLongPress={() => handleLongPress(thread.id, thread.title)}
+        onLongPress={() => handleLongPress(entry.id, entry.title)}
         delayLongPress={500}
         style={{
           backgroundColor: theme.surface,
@@ -104,7 +104,7 @@ export default function MessagesTab() {
               }}
               numberOfLines={1}
             >
-              {thread.title}
+              {entry.title}
             </Text>
             {latestMessage && (
               <Text style={{ color: theme.muted, fontSize: 12 }}>
@@ -176,12 +176,25 @@ export default function MessagesTab() {
       ) : (
         <FlatList
           data={threadList}
-          keyExtractor={(item: any) => (item.threads ?? item).id}
+          keyExtractor={(item: ThreadWithMeta) => item.id}
           renderItem={renderThread}
           contentContainerStyle={{ paddingVertical: 8 }}
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
           refreshing={isLoading}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                <ActivityIndicator color={theme.accent} />
+              </View>
+            ) : null
+          }
         />
       )}
 

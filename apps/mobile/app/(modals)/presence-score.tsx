@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
-import { AppScreen, PresenceScoreRing, Button } from '@sovio/ui';
+import { AppScreen, PresenceScoreRing } from '@sovio/ui';
 import {
   usePresenceScore,
   usePresenceHistory,

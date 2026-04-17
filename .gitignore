@@ -25,3 +25,6 @@ supabase/.temp/
 # One-off local outputs that aren't worth committing.
 typecheck-output.txt
 REVIEW1_LOG.md
+
+# QA screenshots — local artifacts, not source. Keep the directory available.
+apps/mobile/qa-screens/

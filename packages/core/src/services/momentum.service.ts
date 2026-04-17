@@ -11,10 +11,17 @@ type MomentumInsert = Database['public']['Tables']['momentum_availability']['Ins
  */
 type LegacyMomentumPayload = { bucket: string; expires_at: string };
 
-let nearbyFriendsRpcSupported: boolean | null = null;
 let momentumExtendedSchemaSupported: boolean | null = null;
 
-async function checkMomentumExtendedSchemaSupport(): Promise<boolean> {
+/**
+ * Probe whether the momentum_availability table has the extended columns
+ * (available_until, category). Result is cached for the session lifetime.
+ *
+ * Returns `true` when columns exist, `false` when a schema error is detected
+ * (missing table/column), and `null` when a transient error occurs (network,
+ * timeout) so the caller can decide whether to retry.
+ */
+async function checkMomentumExtendedSchemaSupport(): Promise<boolean | null> {
   if (momentumExtendedSchemaSupported !== null) {
     return momentumExtendedSchemaSupported;
   }
@@ -24,8 +31,20 @@ async function checkMomentumExtendedSchemaSupport(): Promise<boolean> {
     .select('available_until, category')
     .limit(1);
 
-  momentumExtendedSchemaSupported = !error;
-  return momentumExtendedSchemaSupported;
+  if (!error) {
+    momentumExtendedSchemaSupported = true;
+    return true;
+  }
+
+  // Permanent schema errors: relation or column not found
+  const isSchemaError = error.code === '42P01' || error.code === '42703';
+  if (isSchemaError) {
+    momentumExtendedSchemaSupported = false;
+    return false;
+  }
+
+  // Transient error — don't cache, let caller retry next time
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,7 +116,8 @@ export async function setAvailable(
   const availableUntil = new Date(
     Date.now() + durationMins * 60 * 1000,
   ).toISOString();
-  const useExtendedSchema = await checkMomentumExtendedSchemaSupport();
+  const schemaCheck = await checkMomentumExtendedSchemaSupport();
+  const useExtendedSchema = schemaCheck === true;
   const updatePayload = {
     bucket,
     category,
@@ -199,27 +219,11 @@ export async function removeAvailability(userId: string): Promise<void> {
   if (error) throw error;
 }
 
-/**
- * Get all available users in a bucket (not expired).
- */
-export async function getAvailableUsers(
-  bucket: string,
-): Promise<MomentumAvailability[]> {
-  const now = Date.now();
-  const { data, error } = await supabase
-    .from('momentum_availability')
-    .select('*')
-    .eq('bucket', bucket)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('[getAvailableUsers] DB query failed. Bucket:', bucket, 'Error:', error.message);
-    throw error;
-  }
-  return (data ?? [])
-    .map((row) => normalizeAvailability(row as Record<string, unknown>))
-    .filter((row) => new Date(row.available_until).getTime() > now);
-}
+// NOTE: `getAvailableUsers` (cross-user listing by bucket) was removed —
+// it had no callers in apps/ or hooks/, and its cross-user SELECT blocked
+// tightening `momentum_availability` RLS to self-only. Cross-user discovery
+// now goes through the SECURITY DEFINER `get_nearby_available_friends` RPC
+// below, which enforces friendship + radius server-side.
 
 /**
  * Check if the user is currently available.
@@ -255,28 +259,10 @@ export async function getNearbyAvailableFriends(
   centerLng: number,
   radiusMeters = 2500,
 ): Promise<NearbyAvailableFriend[]> {
-  if (nearbyFriendsRpcSupported === false) {
+  const schemaSupported = await checkMomentumExtendedSchemaSupport();
+  if (schemaSupported !== true) {
+    // false = schema mismatch (permanent), null = transient error (retry next call)
     return [];
-  }
-
-  if (nearbyFriendsRpcSupported === null) {
-    const { error: shapeError } = await supabase
-      .from('momentum_availability')
-      .select('available_until, category')
-      .limit(1);
-
-    if (shapeError) {
-      // Only permanently disable for schema errors (relation/column not found),
-      // not for transient failures like network timeouts
-      const isSchemaError = shapeError.code === '42P01' || shapeError.code === '42703';
-      if (isSchemaError) {
-        nearbyFriendsRpcSupported = false;
-        console.warn('Nearby friends RPC disabled until schema alignment is complete');
-      }
-      // Leave as null so next call retries after transient errors
-      return [];
-    }
-    nearbyFriendsRpcSupported = true;
   }
 
   const { data, error } = await supabase.rpc('get_nearby_available_friends', {

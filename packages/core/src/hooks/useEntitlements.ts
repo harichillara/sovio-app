@@ -13,10 +13,8 @@ export function useEntitlement() {
     queryKey: queryKeys.entitlements(userId ?? ''),
     queryFn: async () => {
       if (!userId) return null;
-      const [entitlement, quota] = await Promise.all([
-        entitlementsService.getEntitlement(userId),
-        entitlementsService.checkQuota(userId),
-      ]);
+      const entitlement = await entitlementsService.getEntitlement(userId);
+      const quota = await entitlementsService.checkQuota(userId, entitlement);
       return { ...entitlement, ...quota };
     },
     enabled: !!userId,

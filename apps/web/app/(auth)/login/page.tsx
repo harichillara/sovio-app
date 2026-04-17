@@ -27,8 +27,8 @@ export default function LoginPage() {
       }
 
       window.location.href = '/account';
-    } catch (err: any) {
-      setError(err.message ?? 'An error occurred');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }

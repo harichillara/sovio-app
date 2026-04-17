@@ -1,31 +1,41 @@
 import {
-  useQuery,
   useInfiniteQuery,
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import * as messagesService from '../services/messages.service';
+import { THREADS_PAGE_SIZE } from '../services/messages.service';
 import { queryKeys } from './queryKeys';
 import { useAuthStore } from '../stores/auth.store';
 import { useMessagesStore } from '../stores/messages.store';
 import { supabase } from '../supabase/client';
-import type { Message } from '../supabase/types';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import { subscribeToThreadMessages } from '../providers/messagesChannel';
 
 export function useThreads() {
   const userId = useAuthStore((s) => s.user?.id);
   const setThreads = useMessagesStore((s) => s.setThreads);
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: queryKeys.threads(userId ?? ''),
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (!userId) return [];
-      const threads = await messagesService.getThreads(userId);
-      setThreads(threads);
+      const threads = await messagesService.getThreads(userId, pageParam);
       return threads;
     },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.length < THREADS_PAGE_SIZE) return undefined;
+      const lastThread = lastPage[lastPage.length - 1];
+      return lastThread?.latest_message?.created_at ?? lastThread?.created_at;
+    },
     enabled: !!userId,
+    select: (data) => {
+      // Keep the store in sync so unread counts remain available
+      const allThreads = data.pages.flat();
+      setThreads(allThreads);
+      return data;
+    },
   });
 }
 
@@ -84,7 +94,7 @@ export function useCreateThread() {
       title: string;
       participantIds: string[];
       planId?: string;
-    }) => messagesService.createThread(title, participantIds, planId),
+    }) => messagesService.createThread(title, participantIds, planId, userId ?? undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.threads(userId ?? ''),
@@ -111,43 +121,37 @@ export function useMarkThreadRead() {
 }
 
 /**
- * Subscribes to realtime messages for a specific thread.
- * Automatically updates React Query cache when new messages arrive.
+ * Subscribes to realtime message inserts for a specific thread.
+ *
+ * Internally registers with a shared multiplexed channel (see
+ * `providers/messagesChannel.ts`), so opening N threads costs exactly 1
+ * WebSocket subscription instead of N. The shared channel relies on RLS
+ * on `public.messages` to scope events to threads the user participates
+ * in, so per-thread server-side filters aren't needed.
+ *
+ * The hook invalidates the thread's messages query and the user's
+ * threads list on every INSERT. We intentionally don't optimistically
+ * apply the row — React Query's refetch preserves pagination cursors
+ * and avoids duplicating logic that already lives in the fetcher.
  */
 export function useRealtimeMessages(threadId: string | null) {
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?.id);
-  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!threadId) return;
 
-    const channel = supabase
-      .channel(`messages:${threadId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `thread_id=eq.${threadId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.messages(threadId),
-          });
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.threads(userId ?? ''),
-          });
-        },
-      )
-      .subscribe();
+    const unsubscribe = subscribeToThreadMessages(supabase, threadId, {
+      onInsert: () => {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.messages(threadId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.threads(userId ?? ''),
+        });
+      },
+    });
 
-    channelRef.current = channel;
-
-    return () => {
-      supabase.removeChannel(channel);
-      channelRef.current = null;
-    };
+    return unsubscribe;
   }, [threadId, queryClient, userId]);
 }

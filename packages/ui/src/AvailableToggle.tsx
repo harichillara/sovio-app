@@ -65,6 +65,8 @@ export function AvailableToggle({
       <Switch
         value={isAvailable}
         onValueChange={onToggle}
+        accessibilityLabel={isAvailable ? 'Turn off availability' : 'Turn on availability'}
+        accessibilityRole="switch"
         trackColor={{ false: theme.border, true: theme.accent }}
         thumbColor={isAvailable ? theme.background : theme.muted}
       />

@@ -5,6 +5,15 @@ import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, Avatar, Button, LoadingOverlay, withAlpha } from '@sovio/ui';
 import { usePlan, useRespondToInvite, useAuthStore, useUpdatePlan } from '@sovio/core';
 
+interface PlanParticipantRow {
+  user_id: string;
+  status: string;
+  profiles?: {
+    avatar_url?: string;
+    display_name?: string;
+  };
+}
+
 export default function PlanDetailModal() {
   const { theme } = useTheme();
   const { planId } = useLocalSearchParams<{ planId: string }>();
@@ -18,8 +27,8 @@ export default function PlanDetailModal() {
   }
 
   const isCreator = plan.creator_id === userId;
-  const participants = (plan as any).plan_participants ?? [];
-  const myParticipation = participants.find((p: any) => p.user_id === userId);
+  const participants: PlanParticipantRow[] = (plan as Record<string, unknown>).plan_participants as PlanParticipantRow[] ?? [];
+  const myParticipation = participants.find((p) => p.user_id === userId);
 
   const statusColors: Record<string, string> = {
     accepted: theme.success,
@@ -88,7 +97,7 @@ export default function PlanDetailModal() {
           {participants.length === 0 ? (
             <Text style={{ color: theme.muted, fontSize: 14 }}>No participants yet</Text>
           ) : (
-            participants.map((p: any) => {
+            participants.map((p) => {
               const profile = p.profiles;
               return (
                 <View key={p.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

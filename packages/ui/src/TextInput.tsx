@@ -28,6 +28,7 @@ export function TextInput({
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={theme.muted}
+        accessibilityLabel={label ?? placeholder}
         secureTextEntry={secureTextEntry}
         multiline={multiline}
         numberOfLines={numberOfLines}

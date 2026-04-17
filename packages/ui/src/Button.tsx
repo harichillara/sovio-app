@@ -9,7 +9,14 @@ export function Button({ label, onPress, variant = 'primary', disabled }: Button
   const s = createStyles(theme);
   const isPrimary = variant === 'primary';
   return (
-    <Pressable onPress={onPress} disabled={disabled} style={[isPrimary ? s.btnPrimary : s.btnSecondary, disabled && { opacity: 0.4 }]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
+      style={[isPrimary ? s.btnPrimary : s.btnSecondary, disabled && { opacity: 0.4 }]}
+    >
       <Text style={isPrimary ? s.btnTextOnAccent : s.btnTextOnSurface}>{label}</Text>
     </Pressable>
   );

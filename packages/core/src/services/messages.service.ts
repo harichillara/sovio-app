@@ -39,89 +39,34 @@ function mapThreadSummary(row: ThreadSummaryRow): ThreadWithMeta {
   };
 }
 
-async function getThreadsFallback(userId: string): Promise<ThreadWithMeta[]> {
-  // Get threads where user is a participant
-  const { data: participantRows, error: pError } = await supabase
-    .from('thread_participants')
-    .select('thread_id, last_read_at')
-    .eq('user_id', userId);
+export const THREADS_PAGE_SIZE = 30;
 
-  if (pError) throw pError;
-  if (!participantRows?.length) return [];
+/**
+ * Fetch the thread list for a user. Backed by the `get_thread_summaries`
+ * Postgres RPC — the RPC is required and must exist in the database.
+ * No client-side fallback: a missing RPC is a migration bug, not a runtime
+ * condition the client should try to paper over.
+ *
+ * NOTE: The RPC does not yet support cursor-based pagination; `cursor` is
+ * reserved for future use. Callers should stop paginating once fewer than
+ * `THREADS_PAGE_SIZE` rows are returned.
+ */
+export async function getThreads(userId: string, cursor?: string): Promise<ThreadWithMeta[]> {
+  // `userId` is currently unused because the RPC resolves the caller from the
+  // JWT claim on the database side. Kept in the signature for future cursor
+  // support and so existing callers don't need to change.
+  void userId;
 
-  const threadIds = participantRows.map((p) => p.thread_id);
-  const lastReadMap = new Map(
-    participantRows.map((p) => [p.thread_id, p.last_read_at]),
-  );
+  // Cursor-paginated pages are not yet supported by the RPC. Return empty to
+  // signal end-of-list so `useInfiniteQuery` stops calling us.
+  if (cursor) return [];
 
-  // Fetch threads with their latest message
-  const { data: threads, error: tError } = await supabase
-    .from('threads')
-    .select('*')
-    .in('id', threadIds)
-    .order('created_at', { ascending: false });
-
-  if (tError) throw tError;
-
-  // Cap the fetch to avoid pulling the entire message history.
-  // We only need the latest message per thread and unread counts.
-  const { data: messages, error: messagesError } = await supabase
-    .from('messages')
-    .select('*')
-    .in('thread_id', threadIds)
-    .order('created_at', { ascending: false })
-    .limit(threadIds.length * 50);
-
-  if (messagesError) throw messagesError;
-
-  const latestMessages = new Map<string, Message>();
-  const unreadCounts = new Map<string, number>();
-
-  for (const message of messages ?? []) {
-    if (!latestMessages.has(message.thread_id)) {
-      latestMessages.set(message.thread_id, message);
-    }
-
-    const lastReadAt = lastReadMap.get(message.thread_id);
-    const isUnread =
-      message.sender_id !== userId &&
-      (!lastReadAt || new Date(message.created_at) > new Date(lastReadAt));
-
-    if (isUnread) {
-      unreadCounts.set(message.thread_id, (unreadCounts.get(message.thread_id) ?? 0) + 1);
-    }
-  }
-
-  return (threads ?? [])
-    .map((thread) => ({
-      ...thread,
-      latest_message: latestMessages.get(thread.id) ?? null,
-      unread_count: unreadCounts.get(thread.id) ?? 0,
-    }))
-    .sort((a, b) => {
-      const aTimestamp = a.latest_message?.created_at ?? a.created_at;
-      const bTimestamp = b.latest_message?.created_at ?? b.created_at;
-      return new Date(bTimestamp).getTime() - new Date(aTimestamp).getTime();
-    });
-}
-
-export async function getThreads(userId: string): Promise<ThreadWithMeta[]> {
   const { data, error } = await supabase.rpc('get_thread_summaries');
+  if (error) throw error;
 
-  if (!error && data) {
-    return (data as ThreadSummaryRow[]).map(mapThreadSummary);
-  }
-
-  if (error) {
-    // Only fall back for missing-function errors (42883); propagate auth/network/permission errors
-    const isRpcMissing = error.code === '42883';
-    if (!isRpcMissing) {
-      throw error;
-    }
-    console.warn('RPC get_thread_summaries not found, falling back to client query');
-  }
-
-  return getThreadsFallback(userId);
+  return (data as ThreadSummaryRow[] | null | undefined)
+    ?.map(mapThreadSummary)
+    .slice(0, THREADS_PAGE_SIZE) ?? [];
 }
 
 async function assertThreadParticipant(threadId: string, userId: string) {
@@ -179,6 +124,7 @@ export async function createThread(
   title: string,
   participantIds: string[],
   planId?: string,
+  creatorId?: string,
 ): Promise<Thread> {
   const { data: thread, error: threadError } = await supabase
     .from('threads')
@@ -187,17 +133,34 @@ export async function createThread(
     .single();
   if (threadError) throw threadError;
 
-  // Insert all participants
-  const participantInserts = participantIds.map((userId) => ({
-    thread_id: thread.id,
-    user_id: userId,
-  }));
+  // RLS policy thread_participants_insert_member_or_bootstrap requires the
+  // caller to be an existing participant OR bootstrapping an empty thread
+  // with their own row. Because with_check is evaluated row-by-row against
+  // the pre-statement snapshot, a single-batch insert of
+  // [creator, ...others] fails: the "others" rows can't see the creator's
+  // row mid-statement. So we split into two inserts — creator first
+  // (bootstrap branch), then the rest (member branch).
+  if (creatorId) {
+    const { error: bootstrapError } = await supabase
+      .from('thread_participants')
+      .insert({ thread_id: thread.id, user_id: creatorId });
+    if (bootstrapError) throw bootstrapError;
+  }
 
-  const { error: partError } = await supabase
-    .from('thread_participants')
-    .insert(participantInserts);
+  const otherIds = creatorId
+    ? participantIds.filter((id) => id !== creatorId)
+    : participantIds;
 
-  if (partError) throw partError;
+  if (otherIds.length > 0) {
+    const otherInserts = otherIds.map((userId) => ({
+      thread_id: thread.id,
+      user_id: userId,
+    }));
+    const { error: otherError } = await supabase
+      .from('thread_participants')
+      .insert(otherInserts);
+    if (otherError) throw otherError;
+  }
 
   return thread;
 }

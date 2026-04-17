@@ -89,7 +89,7 @@ export default function ReportScreen() {
       ).catch((e) => console.warn('analytics:', e));
 
       setSubmitted(true);
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Could not submit report. Please try again.');
     } finally {
       setIsSubmitting(false);
