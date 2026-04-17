@@ -24,4 +24,5 @@ export const queryKeys = {
   notifications: (userId: string) => ['notifications', userId] as const,
   insights: (userId: string, weekOf?: string) =>
     ['insights', userId, weekOf] as const,
+  featureFlags: (userId: string) => ['feature-flags', userId] as const,
 };

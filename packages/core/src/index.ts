@@ -64,6 +64,7 @@ export * from './hooks/useEvents';
 export * from './hooks/useAutopilot';
 export * from './hooks/useBilling';
 export * from './hooks/useNotificationCenter';
+export * from './hooks/useFeatureFlags';
 
 // Providers
 export { QueryProvider, queryClient } from './providers/QueryProvider';
