@@ -132,7 +132,7 @@ Return ONLY valid JSON.`;
   }
 }
 
-serve(async (req) => {
+const handler = async (req: Request): Promise<Response> => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -197,4 +197,6 @@ serve(async (req) => {
       { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
-});
+};
+
+if (import.meta.main) serve(handler);
