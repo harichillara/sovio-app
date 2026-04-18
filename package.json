@@ -29,7 +29,7 @@
     "overrides": {
       "tar": ">=7.4.3",
       "rollup": ">=4.22.4",
-      "@xmldom/xmldom": ">=0.8.10"
+      "@xmldom/xmldom": ">=0.8.12"
     }
   }
 }
