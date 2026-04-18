@@ -1,6 +1,6 @@
 # Expo 51 → 55 Migration Log
 
-Baseline captured on `release/expo-55-migration` at commit a3f1af904b8cb2081594be392e7168fec6f80014.
+Baseline captured on `release/expo-55-migration` at commit 9c4f48a337b165a1a83e17340ace9140e66de0d3.
 
 ## Baseline results
 - typecheck: EXIT=1
