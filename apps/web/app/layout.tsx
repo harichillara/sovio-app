@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { IBM_Plex_Mono, Space_Grotesk } from 'next/font/google';
 import { cssVars } from '@sovio/tokens/css';
 import { darkTheme } from '@sovio/tokens';
+import { LegalFooter } from '../components/LegalFooter';
 import './globals.css';
 
 const displayFont = Space_Grotesk({
@@ -58,6 +59,7 @@ export default function RootLayout({
             <div className="site-frame site-footer__inner">
               <span>Sovio is built to shrink friction, not expand screen time.</span>
               <span>Anticipatory social operating system for the next decade.</span>
+              <LegalFooter />
             </div>
           </footer>
         </div>

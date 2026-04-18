@@ -3,6 +3,8 @@ import * as momentumService from '../services/momentum.service';
 import * as eventsService from '../services/events.service';
 import { queryKeys } from './queryKeys';
 import { useAuthStore } from '../stores/auth.store';
+import { useLocationStore } from '../stores/location.store';
+import type { AvailabilityMode, ConfidenceLabel, MomentumSource } from '../supabase/app-types';
 
 /**
  * Check if the current user is available.
@@ -33,10 +35,20 @@ export function useSetAvailable() {
       bucket,
       category,
       durationMins,
+      lat,
+      lng,
+      availabilityMode,
+      confidenceLabel,
+      source,
     }: {
       bucket: string;
       category: string | null;
       durationMins: number;
+      lat?: number | null;
+      lng?: number | null;
+      availabilityMode?: AvailabilityMode;
+      confidenceLabel?: ConfidenceLabel;
+      source?: MomentumSource;
     }) => {
       if (!userId) throw new Error('Not authenticated');
       const result = await momentumService.setAvailable(
@@ -44,17 +56,55 @@ export function useSetAvailable() {
         bucket,
         category,
         durationMins,
+        {
+          lat,
+          lng,
+          availabilityMode,
+          confidenceLabel,
+          source,
+        },
       );
       await eventsService.trackEvent(
         userId,
         eventsService.EventTypes.MOMENTUM_AVAILABLE_TOGGLED,
-        { bucket, category, durationMins, action: 'on' },
+        {
+          bucket,
+          category,
+          durationMins,
+          action: 'on',
+          availabilityMode,
+          confidenceLabel,
+          source,
+        },
       );
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['momentum'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.momentum(userId ?? '') });
     },
+  });
+}
+
+export function useNearbyAvailableFriends(radiusMeters = 2500) {
+  const userId = useAuthStore((s) => s.user?.id);
+  const coords = useLocationStore((s) => s.currentCoords);
+
+  return useQuery({
+    queryKey: queryKeys.nearbyFriends(
+      userId ?? '',
+      coords ? `${coords.latitude.toFixed(2)}:${coords.longitude.toFixed(2)}` : 'none',
+    ),
+    queryFn: async () => {
+      if (!userId || !coords) return [];
+      return momentumService.getNearbyAvailableFriends(
+        userId,
+        coords.latitude,
+        coords.longitude,
+        radiusMeters,
+      );
+    },
+    enabled: !!userId && !!coords,
+    refetchInterval: 30_000,
   });
 }
 
@@ -76,7 +126,7 @@ export function useRemoveAvailability() {
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['momentum'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.momentum(userId ?? '') });
     },
   });
 }

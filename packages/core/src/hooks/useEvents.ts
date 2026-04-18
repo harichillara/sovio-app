@@ -16,7 +16,7 @@ export function useTrackEvent() {
       payload,
       source,
     }: {
-      eventType: EventType | string;
+      eventType: EventType;
       payload?: Json;
       source?: string;
     }) => {

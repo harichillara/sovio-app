@@ -1,25 +1,46 @@
 import { supabase } from '../supabase/client';
-import type { AITokenUsage, Profile, UserInterest } from '../supabase/types';
+import type { Profile, UserInterest } from '../supabase/types';
+import { checkQuota } from './entitlements.service';
 
-const FREE_TIER_LIMIT = 100;
+/**
+ * Thrown when the ai-generate edge function returns HTTP 429.
+ * The authoritative quota lives server-side; UI should catch this and
+ * show a paywall / upgrade prompt.
+ */
+export class QuotaExceededError extends Error {
+  public readonly used?: number;
+  public readonly limit?: number;
 
-export async function getTokenUsage(userId: string): Promise<AITokenUsage | null> {
-  const now = new Date();
-  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+  constructor(message = 'AI quota exceeded', meta?: { used?: number; limit?: number }) {
+    super(message);
+    this.name = 'QuotaExceededError';
+    this.used = meta?.used;
+    this.limit = meta?.limit;
+  }
+}
 
-  const { data, error } = await supabase
-    .from('ai_token_usage')
-    .select('*')
-    .eq('user_id', userId)
-    .gte('period_start', periodStart)
-    .lte('period_end', periodEnd)
-    .order('period_start', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+/**
+ * Invoke the ai-generate edge function. Surfaces 429 responses as a typed
+ * QuotaExceededError so callers can render an upgrade prompt.
+ */
+export async function invokeAIGenerate<T = unknown>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('ai-generate', { body });
+
+  // supabase-js surfaces non-2xx responses via `error`. The JSON body
+  // (including our { error: 'quota_exceeded', used, limit }) is in `data`
+  // or on `error.context` depending on the client version — check both.
+  const status = (error as { context?: { status?: number } } | null)?.context?.status;
+  const payload = (data as { error?: string; used?: number; limit?: number } | null) ?? null;
+
+  if (status === 429 || payload?.error === 'quota_exceeded') {
+    throw new QuotaExceededError('AI quota exceeded', {
+      used: payload?.used,
+      limit: payload?.limit,
+    });
+  }
 
   if (error) throw error;
-  return data;
+  return data as T;
 }
 
 export async function checkCanUseAI(userId: string): Promise<{
@@ -27,51 +48,22 @@ export async function checkCanUseAI(userId: string): Promise<{
   tokensUsed: number;
   tokensLimit: number;
 }> {
-  // Get the user's subscription tier
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('subscription_tier')
-    .eq('id', userId)
-    .single();
-
-  if (profileError) throw profileError;
-
-  const isPro = profile.subscription_tier === 'pro';
-  const limit = isPro ? Infinity : FREE_TIER_LIMIT;
-
-  const usage = await getTokenUsage(userId);
-  const tokensUsed = usage?.tokens_used ?? 0;
+  const quota = await checkQuota(userId);
 
   return {
-    allowed: isPro || tokensUsed < limit,
-    tokensUsed,
-    tokensLimit: limit,
+    allowed: quota.allowed,
+    tokensUsed: quota.used,
+    tokensLimit: quota.limit,
   };
 }
 
-export async function incrementTokens(userId: string, count: number): Promise<void> {
-  const now = new Date();
-  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-
-  const existing = await getTokenUsage(userId);
-
-  if (existing) {
-    const { error } = await supabase
-      .from('ai_token_usage')
-      .update({ tokens_used: existing.tokens_used + count })
-      .eq('id', existing.id);
-    if (error) throw error;
-  } else {
-    const { error } = await supabase.from('ai_token_usage').insert({
-      user_id: userId,
-      tokens_used: count,
-      period_start: periodStart,
-      period_end: periodEnd,
-    });
-    if (error) throw error;
-  }
-}
+// NOTE: `incrementTokens` and `getTokenUsage` were removed — they were dead
+// code (no callers anywhere in apps/ or packages/), and their client-side
+// UPDATE/INSERT on `ai_token_usage` blocked tightening RLS to SELECT-only.
+// The authoritative daily quota is enforced server-side inside `ai-generate`
+// (see enforceQuotaAndRun in supabase/functions/ai-generate/index.ts).
+// If a monthly-token meter is wanted in the UI later, expose a SECURITY
+// DEFINER RPC — the client should never write ai_token_usage directly.
 
 export function buildAIContext(
   profile: Profile,

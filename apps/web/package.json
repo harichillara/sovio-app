@@ -5,21 +5,25 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "analyze": "cross-env ANALYZE=true next build"
   },
   "dependencies": {
-    "@sovio/core": "workspace:*",
+    "@sentry/nextjs": "^10.49.0",
     "@sovio/tokens": "workspace:*",
-    "@supabase/ssr": "^0.10.0",
-    "@supabase/supabase-js": "^2.101.1",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.3",
     "framer-motion": "^12.38.0",
-    "next": "^14.2.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "next": "^15.5.15",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@next/bundle-analyzer": "^15.5.15",
+    "@types/node": "^25.6.0",
     "@types/react": "^18.2.0",
-    "typescript": "^5.4.0"
+    "cross-env": "^10.1.0",
+    "typescript": "^6.0.3"
   }
 }

@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
-import { AppScreen, Avatar, MiniActionCard, Button } from '@sovio/ui';
+import { AppScreen, Avatar, MiniActionCard } from '@sovio/ui';
 import { useAuthStore, useSignOut } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -27,9 +28,9 @@ const MENU_ITEMS = [
   },
   {
     title: 'Notifications',
-    body: 'Push alerts, reminders, and quiet hours',
-    label: 'Configure',
-    route: '/settings/privacy', // placeholder route since no dedicated notification screen
+    body: 'Push alerts, reminders, and your activity inbox',
+    label: 'Open',
+    route: '/settings/notifications',
   },
   {
     title: 'Subscription',
@@ -41,7 +42,7 @@ const MENU_ITEMS = [
     title: 'Presence Score',
     body: 'Your real-world momentum this month',
     label: 'View',
-    route: '/(modals)/subscription', // placeholder
+    route: '/(modals)/presence-score',
   },
   {
     title: 'Support & Contact',
@@ -115,7 +116,7 @@ export default function SettingsIndex() {
             title={item.title}
             body={item.body}
             label={item.label}
-            onPress={() => router.push(item.route as any)}
+            onPress={() => router.push(item.route as Href)}
           />
         ))}
 

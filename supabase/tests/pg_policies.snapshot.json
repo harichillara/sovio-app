@@ -1,0 +1,596 @@
+[
+  {
+    "tablename": "ai_jobs",
+    "policyname": "ai_jobs_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "ai_memories",
+    "policyname": "Users manage own memories",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "ai_token_ledger",
+    "policyname": "Users insert ledger",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "ai_token_ledger",
+    "policyname": "Users view own ledger",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "ai_token_usage",
+    "policyname": "ai_token_usage_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "app_events",
+    "policyname": "app_events_insert_own",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "app_events",
+    "policyname": "app_events_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "audit_log",
+    "policyname": "System inserts audit",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "tablename": "audit_log",
+    "policyname": "Users view own audit",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "beta_pro_allowlist",
+    "policyname": "Users can check own pro allowlist status",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(email = (auth.jwt() ->> 'email'::text))",
+    "with_check": null
+  },
+  {
+    "tablename": "entitlements",
+    "policyname": "entitlements_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "friendships",
+    "policyname": "Users send friend requests",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "friendships",
+    "policyname": "Users view own friendships",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "((auth.uid() = user_id) OR (auth.uid() = friend_id))",
+    "with_check": null
+  },
+  {
+    "tablename": "friendships",
+    "policyname": "Users update friendship status",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = friend_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "insights",
+    "policyname": "Users view own insights",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "intent_candidates",
+    "policyname": "intent_candidates_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "location_snapshots",
+    "policyname": "location_snapshots_insert_own",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "location_snapshots",
+    "policyname": "location_snapshots_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "messages",
+    "policyname": "messages_insert_participant",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "((sender_id = auth.uid()) AND (EXISTS ( SELECT 1\n   FROM thread_participants\n  WHERE ((thread_participants.thread_id = messages.thread_id) AND (thread_participants.user_id = auth.uid())))))"
+  },
+  {
+    "tablename": "messages",
+    "policyname": "messages_select_participant",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(EXISTS ( SELECT 1\n   FROM thread_participants\n  WHERE ((thread_participants.thread_id = messages.thread_id) AND (thread_participants.user_id = auth.uid()))))",
+    "with_check": null
+  },
+  {
+    "tablename": "missed_moments",
+    "policyname": "Users view own missed moments",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "momentum_availability",
+    "policyname": "momentum_availability_delete_own",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "momentum_availability",
+    "policyname": "momentum_availability_insert_own",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "momentum_availability",
+    "policyname": "momentum_availability_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "momentum_availability",
+    "policyname": "momentum_availability_update_own",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "notifications",
+    "policyname": "notifications_insert_service_role",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "service_role"
+    ],
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "tablename": "notifications",
+    "policyname": "notifications_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "notifications",
+    "policyname": "notifications_update_own",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "plan_participants",
+    "policyname": "Plan creator can invite",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "(EXISTS ( SELECT 1\n   FROM plans\n  WHERE ((plans.id = plan_participants.plan_id) AND (plans.creator_id = auth.uid()))))"
+  },
+  {
+    "tablename": "plan_participants",
+    "policyname": "View plan participants",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(EXISTS ( SELECT 1\n   FROM plans\n  WHERE ((plans.id = plan_participants.plan_id) AND ((plans.creator_id = auth.uid()) OR (EXISTS ( SELECT 1\n           FROM plan_participants pp\n          WHERE ((pp.plan_id = pp.plan_id) AND (pp.user_id = auth.uid()))))))))",
+    "with_check": null
+  },
+  {
+    "tablename": "plan_participants",
+    "policyname": "Participants update own status",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(user_id = auth.uid())",
+    "with_check": "(user_id = auth.uid())"
+  },
+  {
+    "tablename": "plans",
+    "policyname": "plans_delete_creator",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(creator_id = auth.uid())",
+    "with_check": null
+  },
+  {
+    "tablename": "plans",
+    "policyname": "plans_insert_creator",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "(creator_id = auth.uid())"
+  },
+  {
+    "tablename": "plans",
+    "policyname": "plans_select_participant",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "((creator_id = auth.uid()) OR (EXISTS ( SELECT 1\n   FROM plan_participants\n  WHERE ((plan_participants.plan_id = plans.id) AND (plan_participants.user_id = auth.uid())))))",
+    "with_check": null
+  },
+  {
+    "tablename": "plans",
+    "policyname": "Creators update own plans",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(creator_id = auth.uid())",
+    "with_check": "(creator_id = auth.uid())"
+  },
+  {
+    "tablename": "presence_daily",
+    "policyname": "System upserts presence",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "presence_daily",
+    "policyname": "Users view own presence",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "presence_daily",
+    "policyname": "System updates presence",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "profiles",
+    "policyname": "Profiles viewable by authenticated",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "tablename": "profiles",
+    "policyname": "Users update own profile",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = id)",
+    "with_check": "(auth.uid() = id)"
+  },
+  {
+    "tablename": "push_tokens",
+    "policyname": "Users manage own push tokens",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "suggestions",
+    "policyname": "suggestions_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "suggestions",
+    "policyname": "suggestions_update_own",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "thread_participants",
+    "policyname": "thread_participants_insert_member_or_bootstrap",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "((EXISTS ( SELECT 1\n   FROM thread_participants self\n  WHERE ((self.thread_id = thread_participants.thread_id) AND (self.user_id = auth.uid())))) OR ((auth.uid() = user_id) AND (NOT (EXISTS ( SELECT 1\n   FROM thread_participants any_row\n  WHERE (any_row.thread_id = thread_participants.thread_id))))))"
+  },
+  {
+    "tablename": "thread_participants",
+    "policyname": "View own thread participation",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(user_id = auth.uid())",
+    "with_check": null
+  },
+  {
+    "tablename": "thread_participants",
+    "policyname": "Update own read status",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(user_id = auth.uid())",
+    "with_check": "(user_id = auth.uid())"
+  },
+  {
+    "tablename": "threads",
+    "policyname": "Authenticated create threads",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "tablename": "threads",
+    "policyname": "Thread participants can view",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(EXISTS ( SELECT 1\n   FROM thread_participants\n  WHERE ((thread_participants.thread_id = threads.id) AND (thread_participants.user_id = auth.uid()))))",
+    "with_check": null
+  },
+  {
+    "tablename": "user_interests",
+    "policyname": "Users manage own interests",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "user_preferences",
+    "policyname": "Users manage own preferences",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "user_settings",
+    "policyname": "Users manage own settings",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "weekly_insights",
+    "policyname": "weekly_insights_all_service_role",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "service_role"
+    ],
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "tablename": "weekly_insights",
+    "policyname": "weekly_insights_select_own",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "weekly_insights",
+    "policyname": "weekly_insights_update_own",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": [
+      "authenticated"
+    ],
+    "qual": "(auth.uid() = user_id)",
+    "with_check": "(auth.uid() = user_id)"
+  }
+]

@@ -34,7 +34,7 @@ export function useSuggestedPlans() {
   const setSuggestedPlans = usePlansStore((s) => s.setSuggestedPlans);
 
   return useQuery({
-    queryKey: ['suggested-plans', userId],
+    queryKey: queryKeys.suggestedPlans(userId ?? ''),
     queryFn: async () => {
       if (!userId) return [];
       const plans = await plansService.getSuggestedPlans(userId);
@@ -58,6 +58,7 @@ export function useCreatePlan() {
 
 export function useUpdatePlan() {
   const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
 
   return useMutation({
     mutationFn: ({
@@ -66,7 +67,10 @@ export function useUpdatePlan() {
     }: {
       planId: string;
       data: Partial<PlanUpdate>;
-    }) => plansService.updatePlan(planId, data),
+    }) => {
+      if (!userId) throw new Error('Not authenticated');
+      return plansService.updatePlan(planId, userId, data);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({
@@ -78,9 +82,13 @@ export function useUpdatePlan() {
 
 export function useDeletePlan() {
   const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
 
   return useMutation({
-    mutationFn: (planId: string) => plansService.deletePlan(planId),
+    mutationFn: (planId: string) => {
+      if (!userId) throw new Error('Not authenticated');
+      return plansService.deletePlan(planId, userId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
     },

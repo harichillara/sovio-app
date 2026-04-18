@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck / Lint / Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+  deno:
+    name: Deno edge-fn tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      # Uses the `test` task defined in supabase/functions/deno.json so CI
+      # and local `pnpm test:edge` always cover the same directories. If
+      # you add a new edge function, update deno.json — CI picks it up.
+      - name: Run Deno tests (all edge-fn dirs via deno task)
+        working-directory: supabase/functions
+        run: deno task test
+
+  audit:
+    name: pnpm audit (prod)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # No `cache: pnpm` — the audit job doesn't run pnpm install, so the
+      # cache path doesn't exist and setup-node's post-action errors out.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # --prod filters dev-only vulnerabilities (vitest, eslint, etc.) that
+      # don't ship to users. --audit-level=high blocks only on high/critical.
+      # Gate on high/critical explicitly: pnpm audit's exit code treats any
+      # finding as failure, so parse the JSON and fail only when high or
+      # critical counts are non-zero.
+      - name: pnpm audit
+        run: |
+          set -o pipefail
+          AUDIT_JSON=$(pnpm audit --prod --json || true)
+          echo "$AUDIT_JSON" | jq .
+          HIGH=$(echo "$AUDIT_JSON" | jq '.metadata.vulnerabilities.high // 0')
+          CRITICAL=$(echo "$AUDIT_JSON" | jq '.metadata.vulnerabilities.critical // 0')
+          echo "high=$HIGH critical=$CRITICAL"
+          if [ "$HIGH" -gt 0 ] || [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::High/critical vulnerabilities found"
+            exit 1
+          fi
+
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep scan
+        run: |
+          semgrep scan \
+            --config=p/security-audit \
+            --config=p/typescript \
+            --config=p/react \
+            --config=p/owasp-top-ten \
+            --error \
+            --severity=ERROR \
+            --severity=WARNING \
+            --exclude=node_modules \
+            --exclude=.next \
+            --exclude=.expo \
+            --exclude=dist \
+            --exclude=build \
+            --metrics=off

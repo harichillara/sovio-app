@@ -1,0 +1,88 @@
+# Dependabot for Sovio.
+#
+# Why this config and not the defaults:
+#   - The repo is a pnpm workspace; Dependabot v2 handles pnpm natively but
+#     needs `package-ecosystem: npm` with the lockfile at the repo root.
+#   - We group dev-tooling and runtime deps separately so a surge of React
+#     Native / Next.js updates doesn't drown out a genuine security bump.
+#   - Weekly cadence (not daily) on Monday mornings — reviewing a pile of
+#     bot PRs is a start-of-week task, not an interrupt.
+#   - GitHub Actions gets its own ecosystem entry so action SHAs don't rot.
+#
+# Security notes:
+#   - Dependabot creates PRs, never pushes to main. CI still has to pass
+#     (typecheck / lint / vitest / deno tests / pnpm audit / semgrep).
+#   - `open-pull-requests-limit` caps noise during a big upstream release
+#     (Expo SDK bumps can touch 20+ packages at once).
+version: 2
+updates:
+  # ---- Application + library deps (pnpm workspace) -----------------------
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Chicago
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    groups:
+      # Tooling rarely ships security-critical patches; grouping them keeps
+      # the signal-to-noise ratio high on review.
+      dev-tooling:
+        patterns:
+          - "@typescript-eslint/*"
+          - "eslint*"
+          - "prettier"
+          - "typescript"
+          - "vitest"
+          - "@vitest/*"
+          - "@types/*"
+        update-types:
+          - minor
+          - patch
+      # React Native / Expo ecosystem — a single Expo SDK bump touches
+      # many packages; one grouped PR is easier to test than 20 loose ones.
+      expo-rn:
+        patterns:
+          - "expo"
+          - "expo-*"
+          - "react-native"
+          - "react-native-*"
+          - "@react-native/*"
+          - "@react-native-*/*"
+        update-types:
+          - minor
+          - patch
+      # Next.js + its direct dependents.
+      next:
+        patterns:
+          - "next"
+          - "@next/*"
+          - "eslint-config-next"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Major-version React bumps are breaking-by-design; handle them as a
+      # planned project, not a bot PR.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+
+  # ---- GitHub Actions (pin action versions fresh) ------------------------
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Chicago
+    labels:
+      - dependencies
+      - ci
+    open-pull-requests-limit: 5

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';

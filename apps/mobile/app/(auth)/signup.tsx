@@ -3,53 +3,90 @@ import { View, Text, Pressable, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, TextInput, Button, SocialAuthButton, LoadingOverlay } from '@sovio/ui';
-import { useSignUp, useSignInWithGoogle, useSignInWithApple } from '@sovio/core';
+import {
+  authService,
+  useSignUp,
+  useSignInWithGoogle,
+  useSignInWithApple,
+} from '@sovio/core';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
   const { theme } = useTheme();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   const signUpMutation = useSignUp();
   const googleMutation = useSignInWithGoogle();
   const appleMutation = useSignInWithApple();
 
   const isLoading = signUpMutation.isPending || googleMutation.isPending || appleMutation.isPending;
-  const error = signUpMutation.error?.message || googleMutation.error?.message || appleMutation.error?.message;
+  const error =
+    signUpMutation.error?.message ||
+    googleMutation.error?.message ||
+    appleMutation.error?.message ||
+    oauthError;
+  const needsConfirmation = signUpMutation.isSuccess && !signUpMutation.data?.session;
 
   const handleSignUp = () => {
     if (!fullName || !email || !password) return;
+    setOauthError(null);
     signUpMutation.mutate({ email, password, fullName });
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      console.log('Google sign-in flow');
+      setOauthError(null);
+      const redirectTo = authService.getGoogleOAuthRedirectUrl();
+
+      const data = await googleMutation.mutateAsync({ redirectTo });
+
+      if (Platform.OS === 'web') {
+        // Supabase owns the browser redirect on web so PKCE state is stored
+        // in the expected place before navigating away.
+        return;
+      }
+
+      if (!data?.url) {
+        throw new Error('Google sign-in is unavailable right now.');
+      }
+
+      // On native, open the browser. The AuthProvider's Linking listener
+      // handles the callback — don't also call completeOAuthFromUrl here
+      // to avoid a race on the single-use authorization code.
+      await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     } catch (e) {
       console.error(e);
+      setOauthError(e instanceof Error ? e.message : 'Google sign-in failed.');
     }
   };
 
   const handleAppleSignIn = async () => {
     try {
-      const nonce = await Crypto.digestStringAsync(
+      const rawNonce = Crypto.getRandomBytes(32).reduce((s: string, b: number) => s + b.toString(16).padStart(2, '0'), '')
+      const hashedNonce = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
-        Math.random().toString(36)
+        rawNonce,
       );
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
       if (credential.identityToken) {
-        appleMutation.mutate({ identityToken: credential.identityToken, nonce });
+        appleMutation.mutate({ identityToken: credential.identityToken, nonce: rawNonce });
       }
     } catch (e) {
       console.error(e);
+      setOauthError(e instanceof Error ? e.message : 'Apple sign-in failed.');
     }
   };
 
@@ -70,40 +107,56 @@ export default function SignUpScreen() {
           </Text>
         ) : null}
 
-        <TextInput
-          label="Full Name"
-          placeholder="Your name"
-          value={fullName}
-          onChangeText={setFullName}
-          autoCapitalize="words"
-        />
+        {needsConfirmation ? (
+          <View style={{ backgroundColor: theme.surfaceAlt, borderRadius: 14, padding: 18, gap: 8 }}>
+            <Text style={{ color: theme.success, fontSize: 15, fontWeight: '700' }}>
+              Check your inbox
+            </Text>
+            <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
+              We created your account for {email}. Confirm your email to unlock Sovio, then come back and sign in.
+            </Text>
+            <Button label="Back to sign in" onPress={() => router.replace('/(auth)/login')} />
+          </View>
+        ) : null}
 
-        <TextInput
-          label="Email"
-          placeholder="you@example.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        {!needsConfirmation ? (
+          <>
+            <TextInput
+              label="Full Name"
+              placeholder="Your name"
+              value={fullName}
+              onChangeText={setFullName}
+              autoCapitalize="words"
+            />
 
-        <TextInput
-          label="Password"
-          placeholder="Create a password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+            <TextInput
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
 
-        <Button label="Create Account" onPress={handleSignUp} />
+            <TextInput
+              label="Password"
+              placeholder="Create a password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
 
-        <View style={{ alignItems: 'center', marginVertical: 8 }}>
-          <Text style={{ color: theme.muted, fontSize: 13 }}>or continue with</Text>
-        </View>
+            <Button label="Create Account" onPress={handleSignUp} />
 
-        <SocialAuthButton provider="google" onPress={handleGoogleSignIn} />
-        {Platform.OS === 'ios' ? (
-          <SocialAuthButton provider="apple" onPress={handleAppleSignIn} />
+            <View style={{ alignItems: 'center', marginVertical: 8 }}>
+              <Text style={{ color: theme.muted, fontSize: 13 }}>or continue with</Text>
+            </View>
+
+            <SocialAuthButton provider="google" onPress={handleGoogleSignIn} />
+            {Platform.OS === 'ios' ? (
+              <SocialAuthButton provider="apple" onPress={handleAppleSignIn} />
+            ) : null}
+          </>
         ) : null}
 
         <Pressable onPress={() => router.back()}>

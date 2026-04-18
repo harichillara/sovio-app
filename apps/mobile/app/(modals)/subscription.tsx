@@ -4,12 +4,14 @@ import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { AppScreen, Button } from '@sovio/ui';
 import {
-  useAuthStore,
   useSubscription,
   useCreateCheckout,
   useCancelSubscription,
+  useIsPro,
 } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
+
+const PRO_PRICE = '$6.99';
 
 const features = [
   { label: 'AI calls / day', free: '50', pro: '500' },
@@ -22,28 +24,46 @@ const features = [
 
 export default function SubscriptionModal() {
   const { theme } = useTheme();
-  const tier = useAuthStore((s) => s.profile?.subscription_tier ?? 'free');
   const { data: subscription, isLoading: subLoading } = useSubscription();
   const checkoutMutation = useCreateCheckout();
   const cancelMutation = useCancelSubscription();
+  const isPro = useIsPro();
+  const tier = isPro ? 'pro' : 'free';
+  const accessEndsOn = subscription?.pro_until ?? subscription?.current_period_end ?? null;
 
   const handleUpgrade = useCallback(async () => {
     try {
       const result = await checkoutMutation.mutateAsync({ plan: 'pro' });
-      if (result.url) {
+      if (result.mode === 'checkout' && result.url) {
         Linking.openURL(result.url);
-      } else {
-        Alert.alert('Checkout', 'Checkout session created. Check your email for the payment link.');
+        return;
       }
+
+      if (result.mode === 'already-active') {
+        Alert.alert('Pro is active', result.message);
+        return;
+      }
+
+      Alert.alert('You’re on the list', result.message);
     } catch {
       Alert.alert('Error', 'Could not start checkout. Please try again.');
     }
   }, [checkoutMutation]);
 
   const handleCancel = useCallback(() => {
+    const endDateLabel = accessEndsOn
+      ? new Date(accessEndsOn).toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : null;
+
     Alert.alert(
       'Cancel Subscription',
-      'Are you sure you want to cancel your Pro subscription? You will lose access to Pro features at the end of your billing period.',
+      endDateLabel
+        ? `Are you sure you want to cancel Pro? You will keep access through ${endDateLabel}.`
+        : 'Are you sure you want to cancel your Pro subscription?',
       [
         { text: 'Keep Pro', style: 'cancel' },
         {
@@ -51,8 +71,22 @@ export default function SubscriptionModal() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await cancelMutation.mutateAsync();
-              Alert.alert('Cancelled', 'Your subscription has been cancelled.');
+              const nextSubscription = await cancelMutation.mutateAsync();
+              const nextEndDate = nextSubscription.pro_until ?? nextSubscription.current_period_end;
+
+              if (nextSubscription.cancel_at_period_end && nextEndDate) {
+                Alert.alert(
+                  'Cancellation scheduled',
+                  `You’ll keep Pro until ${new Date(nextEndDate).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}.`,
+                );
+                return;
+              }
+
+              Alert.alert('Cancelled', 'Your Pro access has been removed.');
             } catch {
               Alert.alert('Error', 'Could not cancel subscription.');
             }
@@ -60,7 +94,7 @@ export default function SubscriptionModal() {
         },
       ],
     );
-  }, [cancelMutation]);
+  }, [accessEndsOn, cancelMutation]);
 
   const handleRestore = useCallback(() => {
     Alert.alert(
@@ -99,6 +133,7 @@ export default function SubscriptionModal() {
             gap: 8,
           }}
         >
+          {subLoading && <ActivityIndicator color={theme.accent} style={{ alignSelf: 'flex-start' }} />}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text
               style={{
@@ -135,10 +170,10 @@ export default function SubscriptionModal() {
             Sovio {tier === 'pro' ? 'Pro' : 'Free'}
           </Text>
 
-          {tier === 'pro' && subscription?.current_period_end && (
+          {tier === 'pro' && accessEndsOn && (
             <Text style={{ color: theme.muted, fontSize: 13 }}>
-              Renews{' '}
-              {new Date(subscription.current_period_end).toLocaleDateString('en-US', {
+              {subscription?.cancel_at_period_end ? 'Access through ' : 'Active through '}
+              {new Date(accessEndsOn).toLocaleDateString('en-US', {
                 month: 'long',
                 day: 'numeric',
                 year: 'numeric',
@@ -148,16 +183,39 @@ export default function SubscriptionModal() {
 
           {tier === 'free' && (
             <Text style={{ color: theme.muted, fontSize: 14 }}>
-              Upgrade to Pro for unlimited AI, faster coordination, and deeper insights.
+              Upgrade interest is live now. Payments are staged while we finish the full billing rollout.
             </Text>
           )}
 
           {tier === 'pro' && (
             <Text style={{ color: theme.success, fontSize: 14, fontWeight: '600' }}>
-              You have full access to all features.
+              {subscription?.cancel_at_period_end
+                ? 'Pro will stay active until your current access window ends.'
+                : 'You have full access to all features.'}
             </Text>
           )}
         </View>
+
+        {tier === 'free' && (
+          <View
+            style={{
+              backgroundColor: theme.surface,
+              borderRadius: 18,
+              padding: 16,
+              gap: 8,
+            }}
+          >
+            <Text style={{ color: theme.accent, fontSize: 12, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>
+              Staged Billing
+            </Text>
+            <Text style={{ color: theme.text, fontSize: 16, fontWeight: '700' }}>
+              Pro access is being rolled out in waves.
+            </Text>
+            <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>
+              You can request access today. We’ll keep the product wired, save the intent, and unlock payments without changing the flow later.
+            </Text>
+          </View>
+        )}
 
         {/* Feature comparison */}
         <View
@@ -247,7 +305,7 @@ export default function SubscriptionModal() {
               gap: 4,
             }}
           >
-            <Text style={{ color: theme.text, fontSize: 28, fontWeight: '800' }}>$6.99</Text>
+            <Text style={{ color: theme.text, fontSize: 28, fontWeight: '800' }}>{PRO_PRICE}</Text>
             <Text style={{ color: theme.muted, fontSize: 14 }}>per month</Text>
           </View>
         )}
@@ -258,7 +316,7 @@ export default function SubscriptionModal() {
             {checkoutMutation.isPending ? (
               <ActivityIndicator color={theme.accent} />
             ) : (
-              <Button label="Upgrade to Pro" onPress={handleUpgrade} />
+              <Button label="Request Pro access" onPress={handleUpgrade} />
             )}
             <Pressable onPress={handleRestore} style={{ alignItems: 'center', paddingVertical: 8 }}>
               <Text style={{ color: theme.muted, fontSize: 14, fontWeight: '600' }}>

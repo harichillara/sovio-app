@@ -1,18 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Switch, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@sovio/tokens/ThemeContext';
-import { AppScreen, TokenMeter, LoadingOverlay, Button } from '@sovio/ui';
-import { useAuthStore, useAITokens, useAIStore, supabase } from '@sovio/core';
-import { Ionicons } from '@expo/vector-icons';
-
-const FREE_DAILY_LIMIT = 50;
-const PRO_DAILY_LIMIT = 500;
+import { AppScreen, TokenMeter, LoadingOverlay, Button, ToggleRow } from '@sovio/ui';
+import { useAuthStore, useAITokens, useAIStore, useIsPro, supabase } from '@sovio/core';
 
 export default function AISettingsModal() {
   const { theme } = useTheme();
   const userId = useAuthStore((s) => s.user?.id);
-  const tier = useAuthStore((s) => s.profile?.subscription_tier ?? 'free');
+  const isPro = useIsPro();
+  const tier = isPro ? 'pro' : 'free';
   const tokensUsed = useAIStore((s) => s.tokensUsed);
   const tokensLimit = useAIStore((s) => s.tokensLimit);
 
@@ -24,19 +21,22 @@ export default function AISettingsModal() {
 
   // Fetch AI tokens data
   useAITokens();
-
-  const dailyLimit = tier === 'pro' ? PRO_DAILY_LIMIT : FREE_DAILY_LIMIT;
+  const dailyLimit = tokensLimit > 0 ? tokensLimit : tier === 'pro' ? 500 : 50;
 
   // Load preferences from DB
   useEffect(() => {
     if (!userId) return;
     (async () => {
       try {
-        const { data: prefs } = await supabase
+        const { data: prefs, error: prefsError } = await supabase
           .from('user_preferences')
           .select('key, value')
           .eq('user_id', userId)
           .in('key', ['ai_plan_suggestions', 'ai_message_drafts', 'ai_auto_reply']);
+
+        if (prefsError) {
+          console.error('[AISettings] Failed to load AI preferences.', prefsError.message);
+        }
 
         if (prefs) {
           for (const p of prefs) {
@@ -52,11 +52,16 @@ export default function AISettingsModal() {
   }, [userId]);
 
   const savePref = useCallback(
-    async (key: string, value: boolean) => {
+    async (key: string, value: boolean, revert: () => void) => {
       if (!userId) return;
-      await supabase
+      const { error: saveError } = await supabase
         .from('user_preferences')
         .upsert({ user_id: userId, key, value: String(value) }, { onConflict: 'user_id,key' });
+      if (saveError) {
+        console.error('[AISettings] Failed to save preference', key, saveError.message);
+        revert();
+        Alert.alert('Error', 'Could not save preference. Please try again.');
+      }
     },
     [userId],
   );
@@ -121,9 +126,8 @@ export default function AISettingsModal() {
             value={planSuggestions}
             onValueChange={(v) => {
               setPlanSuggestions(v);
-              savePref('ai_plan_suggestions', v);
+              savePref('ai_plan_suggestions', v, () => setPlanSuggestions(!v));
             }}
-            theme={theme}
           />
           <ToggleRow
             label="AI message drafts"
@@ -131,47 +135,25 @@ export default function AISettingsModal() {
             value={messageDrafts}
             onValueChange={(v) => {
               setMessageDrafts(v);
-              savePref('ai_message_drafts', v);
+              savePref('ai_message_drafts', v, () => setMessageDrafts(!v));
             }}
-            theme={theme}
           />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text
-                  style={{
-                    color: tier !== 'pro' ? theme.muted : theme.text,
-                    fontSize: 15,
-                    fontWeight: '600',
-                  }}
-                >
-                  Auto-reply
-                </Text>
-                {tier !== 'pro' && (
-                  <Ionicons name="lock-closed" size={14} color={theme.muted} />
-                )}
-              </View>
-              <Text style={{ color: theme.muted, fontSize: 13 }}>
-                {tier === 'pro'
-                  ? 'Automatically send AI replies in safe contexts'
-                  : 'Pro only -- upgrade to unlock'}
-              </Text>
-            </View>
-            <Switch
-              value={autoReply}
-              onValueChange={(v) => {
-                if (tier !== 'pro') {
-                  router.push('/(modals)/subscription');
-                  return;
-                }
-                setAutoReply(v);
-                savePref('ai_auto_reply', v);
-              }}
-              trackColor={{ false: theme.border, true: theme.accent }}
-              thumbColor="#FFF"
-              disabled={tier !== 'pro'}
-            />
-          </View>
+          <ToggleRow
+            label="Auto-reply"
+            description={tier === 'pro'
+              ? 'Automatically send AI replies in safe contexts'
+              : 'Pro only -- upgrade to unlock'}
+            value={autoReply}
+            onValueChange={(v) => {
+              if (tier !== 'pro') {
+                router.push('/(modals)/subscription');
+                return;
+              }
+              setAutoReply(v);
+              savePref('ai_auto_reply', v, () => setAutoReply(!v));
+            }}
+            disabled={tier !== 'pro'}
+          />
         </View>
 
         {/* AI Usage section */}
@@ -199,8 +181,8 @@ export default function AISettingsModal() {
 
           <Text style={{ color: theme.muted, fontSize: 13 }}>
             {tier === 'pro'
-              ? 'Pro plan: 500 AI calls per day'
-              : 'Free plan: 50 AI calls per day. Upgrade for more.'}
+              ? `Pro plan: ${dailyLimit} AI calls per day`
+              : `Free plan: ${dailyLimit} AI calls per day. Pro access is rolling out in waves.`}
           </Text>
 
           {tier === 'free' && (
@@ -238,42 +220,3 @@ export default function AISettingsModal() {
   );
 }
 
-function ToggleRow({
-  label,
-  description,
-  value,
-  onValueChange,
-  theme,
-  disabled,
-}: {
-  label: string;
-  description: string;
-  value: boolean;
-  onValueChange: (v: boolean) => void;
-  theme: any;
-  disabled?: boolean;
-}) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            color: disabled ? theme.muted : theme.text,
-            fontSize: 15,
-            fontWeight: '600',
-          }}
-        >
-          {label}
-        </Text>
-        <Text style={{ color: theme.muted, fontSize: 13 }}>{description}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: theme.border, true: theme.accent }}
-        thumbColor="#FFF"
-        disabled={disabled}
-      />
-    </View>
-  );
-}

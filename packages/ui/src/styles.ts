@@ -1,6 +1,16 @@
 import { StyleSheet } from 'react-native';
 import type { SovioTheme } from '@sovio/tokens';
 
+export function withAlpha(hex: string, alpha: number): string {
+  const normalized = hex.replace('#', '');
+  if (normalized.length !== 6) return hex;
+  const value = Number.parseInt(normalized, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function createStyles(theme: SovioTheme) {
   return StyleSheet.create({
     heroCard: { backgroundColor: theme.surface, borderRadius: 28, padding: 22, gap: 12 },

@@ -338,29 +338,43 @@ export type Database = {
         ];
       };
       ai_jobs: {
+        // Post-unify schema (see 20260416195000_ai_jobs_unify). `kind` is
+        // the discriminator — 'autopilot' for user-facing proposals,
+        // 'queue' for background jobs. `payload` / `result` replace the
+        // earlier `input` / `output` columns.
+        // TODO: regenerate via `supabase gen types` once CI is wired.
         Row: {
           id: string;
           user_id: string;
+          kind: string;
           job_type: string;
           status: string;
+          payload: Json | null;
           result: Json | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
+          kind: string;
           job_type: string;
           status?: string;
+          payload?: Json | null;
           result?: Json | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
+          kind?: string;
           job_type?: string;
           status?: string;
+          payload?: Json | null;
           result?: Json | null;
           created_at?: string;
+          updated_at?: string;
         };
         Relationships: [
           {
@@ -615,6 +629,11 @@ export type Database = {
           bucket: string;
           category: string | null;
           available_until: string;
+          lat: number | null;
+          lng: number | null;
+          availability_mode: string;
+          confidence_label: string;
+          source: string;
           created_at: string;
         };
         Insert: {
@@ -623,6 +642,11 @@ export type Database = {
           bucket: string;
           category?: string | null;
           available_until: string;
+          lat?: number | null;
+          lng?: number | null;
+          availability_mode?: string;
+          confidence_label?: string;
+          source?: string;
           created_at?: string;
         };
         Update: {
@@ -631,11 +655,137 @@ export type Database = {
           bucket?: string;
           category?: string | null;
           available_until?: string;
+          lat?: number | null;
+          lng?: number | null;
+          availability_mode?: string;
+          confidence_label?: string;
+          source?: string;
           created_at?: string;
         };
         Relationships: [
           {
             foreignKeyName: 'momentum_availability_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      location_snapshots: {
+        Row: {
+          id: string;
+          user_id: string;
+          lat: number;
+          lng: number;
+          accuracy_meters: number | null;
+          locality_bucket: string;
+          sharing_mode: string;
+          captured_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          lat: number;
+          lng: number;
+          accuracy_meters?: number | null;
+          locality_bucket: string;
+          sharing_mode?: string;
+          captured_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          lat?: number;
+          lng?: number;
+          accuracy_meters?: number | null;
+          locality_bucket?: string;
+          sharing_mode?: string;
+          captured_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'location_snapshots_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      intent_candidates: {
+        Row: {
+          id: string;
+          user_id: string;
+          source: 'google_place' | 'predicthq_event' | 'social';
+          kind: 'place' | 'event' | 'moment';
+          external_id: string | null;
+          title: string;
+          summary: string | null;
+          lat: number | null;
+          lng: number | null;
+          starts_at: string | null;
+          ends_at: string | null;
+          distance_meters: number | null;
+          social_fit_score: number;
+          novelty_score: number;
+          friction_score: number;
+          timing_score: number;
+          source_confidence: number;
+          rank_score: number;
+          payload: Json | null;
+          expires_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          source: 'google_place' | 'predicthq_event' | 'social';
+          kind: 'place' | 'event' | 'moment';
+          external_id?: string | null;
+          title: string;
+          summary?: string | null;
+          lat?: number | null;
+          lng?: number | null;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          distance_meters?: number | null;
+          social_fit_score?: number;
+          novelty_score?: number;
+          friction_score?: number;
+          timing_score?: number;
+          source_confidence?: number;
+          rank_score?: number;
+          payload?: Json | null;
+          expires_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          source?: 'google_place' | 'predicthq_event' | 'social';
+          kind?: 'place' | 'event' | 'moment';
+          external_id?: string | null;
+          title?: string;
+          summary?: string | null;
+          lat?: number | null;
+          lng?: number | null;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          distance_meters?: number | null;
+          social_fit_score?: number;
+          novelty_score?: number;
+          friction_score?: number;
+          timing_score?: number;
+          source_confidence?: number;
+          rank_score?: number;
+          payload?: Json | null;
+          expires_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'intent_candidates_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
@@ -754,6 +904,50 @@ export type Database = {
           },
         ];
       };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          kind: 'suggestion' | 'message' | 'replay' | 'insight' | 'match';
+          title: string;
+          body: string;
+          data: Record<string, unknown> | null;
+          read: boolean;
+          push_sent: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          kind: 'suggestion' | 'message' | 'replay' | 'insight' | 'match';
+          title: string;
+          body?: string;
+          data?: Record<string, unknown>;
+          read?: boolean;
+          push_sent?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          kind?: 'suggestion' | 'message' | 'replay' | 'insight' | 'match';
+          title?: string;
+          body?: string;
+          data?: Record<string, unknown>;
+          read?: boolean;
+          push_sent?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       reports: {
         Row: {
           id: string;
@@ -815,6 +1009,10 @@ export type Database = {
           status: 'new' | 'accepted' | 'dismissed' | 'expired';
           confidence: number;
           dismiss_reason: string | null;
+          source_label: string | null;
+          why_now: string | null;
+          candidate_id: string | null;
+          payload: Json | null;
           expires_at: string | null;
           created_at: string;
         };
@@ -827,6 +1025,10 @@ export type Database = {
           status?: 'new' | 'accepted' | 'dismissed' | 'expired';
           confidence?: number;
           dismiss_reason?: string | null;
+          source_label?: string | null;
+          why_now?: string | null;
+          candidate_id?: string | null;
+          payload?: Json | null;
           expires_at?: string | null;
           created_at?: string;
         };
@@ -839,6 +1041,10 @@ export type Database = {
           status?: 'new' | 'accepted' | 'dismissed' | 'expired';
           confidence?: number;
           dismiss_reason?: string | null;
+          source_label?: string | null;
+          why_now?: string | null;
+          candidate_id?: string | null;
+          payload?: Json | null;
           expires_at?: string | null;
           created_at?: string;
         };
@@ -850,11 +1056,65 @@ export type Database = {
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
+          {
+            foreignKeyName: 'suggestions_candidate_id_fkey';
+            columns: ['candidate_id'];
+            isOneToOne: false;
+            referencedRelation: 'intent_candidates';
+            referencedColumns: ['id'];
+          },
         ];
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_thread_summaries: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          thread_id: string;
+          plan_id: string | null;
+          title: string;
+          thread_created_at: string;
+          latest_message_id: string | null;
+          latest_message_sender_id: string | null;
+          latest_message_content: string | null;
+          latest_message_is_ai_draft: boolean | null;
+          latest_message_created_at: string | null;
+          unread_count: number;
+        }[];
+      };
+      get_nearby_available_friends: {
+        Args: {
+          viewer_id: string;
+          center_lat: number;
+          center_lng: number;
+          radius_meters?: number;
+        };
+        Returns: {
+          friend_id: string;
+          display_name: string | null;
+          avatar_url: string | null;
+          lat: number | null;
+          lng: number | null;
+          distance_meters: number;
+          category: string | null;
+          available_until: string;
+          confidence_label: string;
+        }[];
+      };
+      // Added in 20260417010000_rls_hardening_pt3. SECURITY DEFINER functions
+      // that flip `status` on the caller's own autopilot rows in ai_jobs.
+      // Clients can't UPDATE ai_jobs directly (no RLS UPDATE policy) — these
+      // RPCs are the only approve/reject path.
+      approve_autopilot_proposal: {
+        Args: { p_job_id: string };
+        Returns: void;
+      };
+      reject_autopilot_proposal: {
+        Args: { p_job_id: string };
+        Returns: void;
+      };
+    };
     Enums: {
       subscription_tier: 'free' | 'pro';
       plan_status: 'draft' | 'active' | 'completed' | 'cancelled';

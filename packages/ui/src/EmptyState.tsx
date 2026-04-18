@@ -1,16 +1,19 @@
 import React from 'react';
+import type { ComponentProps } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 import { Button } from './Button';
 import type { EmptyStateProps } from './types';
 
+type IoniconsName = ComponentProps<typeof Ionicons>['name'];
+
 export function EmptyState({ icon, title, body, actionLabel, onAction }: EmptyStateProps) {
   const { theme } = useTheme();
 
   return (
     <View style={styles.container}>
-      <Ionicons name={icon as any} size={56} color={theme.muted} />
+      <Ionicons name={icon as IoniconsName} size={56} color={theme.muted} />
       <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
       <Text style={[styles.body, { color: theme.muted }]}>{body}</Text>
       {actionLabel && onAction ? (

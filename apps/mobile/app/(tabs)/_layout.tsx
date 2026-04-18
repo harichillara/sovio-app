@@ -1,6 +1,5 @@
 import React from 'react';
-import { Pressable } from 'react-native';
-import { Tabs, router } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@sovio/tokens/ThemeContext';
 
@@ -12,19 +11,6 @@ const TAB_ICONS: Record<
   momentum: { active: 'flash', inactive: 'flash-outline' },
   messages: { active: 'chatbubble', inactive: 'chatbubble-outline' },
   replay: { active: 'refresh', inactive: 'refresh-outline' },
-};
-
-function SettingsHeaderButton() {
-  const { theme } = useTheme();
-  return (
-    <Pressable
-      onPress={() => router.push('/settings')}
-      style={{ paddingRight: 16 }}
-      hitSlop={12}
-    >
-      <Ionicons name="settings-outline" size={22} color={theme.muted} />
-    </Pressable>
-  );
 }
 
 export default function TabsLayout() {
@@ -53,7 +39,6 @@ export default function TabsLayout() {
             />
           );
         },
-        headerRight: () => <SettingsHeaderButton />,
       })}
     >
       <Tabs.Screen name="home" options={{ title: 'Home' }} />

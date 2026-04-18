@@ -20,7 +20,11 @@ export function SuggestionCard({
   const { theme } = useTheme();
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+    <View
+      style={[styles.card, { backgroundColor: theme.surface }]}
+      accessibilityRole="summary"
+      accessibilityLabel={`${TYPE_LABELS[type] ?? type} suggestion: ${title}`}
+    >
       <Text style={[styles.eyebrow, { color: theme.accent }]}>
         {TYPE_LABELS[type] ?? type.toUpperCase()}
       </Text>

@@ -19,11 +19,13 @@ export function SocialAuthButton({ provider, onPress }: SocialAuthButtonProps) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={[
         styles.button,
         {
-          backgroundColor: isGoogle ? theme.surface : '#000',
-          borderColor: isGoogle ? theme.border : '#000',
+          backgroundColor: isGoogle ? theme.surface : theme.text,
+          borderColor: isGoogle ? theme.border : theme.text,
           borderWidth: isGoogle ? 1.5 : 0,
         },
       ]}
@@ -32,12 +34,12 @@ export function SocialAuthButton({ provider, onPress }: SocialAuthButtonProps) {
         <Ionicons
           name={iconName}
           size={20}
-          color={isGoogle ? theme.text : '#FFF'}
+          color={isGoogle ? theme.text : theme.background}
         />
         <Text
           style={[
             styles.label,
-            { color: isGoogle ? theme.text : '#FFF' },
+            { color: isGoogle ? theme.text : theme.background },
           ]}
         >
           {label}

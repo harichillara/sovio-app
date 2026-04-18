@@ -20,7 +20,9 @@ import {
   useMarkThreadRead,
   useAuthStore,
   useAIStore,
+  useIsPro,
   supabase,
+  aiService,
 } from '@sovio/core';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -28,7 +30,8 @@ export default function ThreadDetailModal() {
   const { theme } = useTheme();
   const { threadId } = useLocalSearchParams<{ threadId: string }>();
   const userId = useAuthStore((s) => s.user?.id);
-  const tier = useAuthStore((s) => s.profile?.subscription_tier ?? 'free');
+  const isPro = useIsPro();
+  const tier = isPro ? 'pro' : 'free';
   const [input, setInput] = useState('');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
   const [showingToast, setShowingToast] = useState(false);
@@ -48,7 +51,8 @@ export default function ThreadDetailModal() {
     if (threadId && userId) {
       markReadMutation.mutate({ threadId });
     }
-  }, [threadId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId, userId]);
 
   const allMessages = messagesQuery.data?.pages?.flat() ?? [];
   const lastMessage = allMessages.length > 0 ? allMessages[0] : null;
@@ -67,18 +71,11 @@ export default function ThreadDetailModal() {
     setShowingToast(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-generate', {
-        body: {
-          op: 'reply_draft',
-          threadId,
-          messageId: lastMessage.id,
-        },
+      const data = await aiService.invokeAIGenerate<{ draft?: string; content?: string }>({
+        op: 'reply_draft',
+        threadId,
+        messageId: lastMessage.id,
       });
-
-      if (error) {
-        Alert.alert('AI Draft Error', 'Could not generate a draft. Please try again.');
-        return;
-      }
 
       const draft = data?.draft ?? data?.content ?? '';
       if (draft) {
@@ -86,12 +83,16 @@ export default function ThreadDetailModal() {
         inputRef.current?.focus();
       }
     } catch (err) {
-      Alert.alert('Error', 'Something went wrong generating the draft.');
+      if (err instanceof aiService.QuotaExceededError) {
+        Alert.alert('Daily AI limit reached', 'Upgrade to Pro for more AI drafts.');
+      } else {
+        Alert.alert('AI Draft Error', 'Could not generate a draft. Please try again.');
+      }
     } finally {
       setIsGenerating(false);
       setTimeout(() => setShowingToast(false), 300);
     }
-  }, [threadId, lastMessage]);
+  }, [threadId, lastMessage, setIsGenerating]);
 
   const handleLongPressMessage = useCallback(
     (messageId: string, senderId: string) => {
@@ -235,7 +236,7 @@ export default function ThreadDetailModal() {
           contentContainerStyle={{ gap: 4, paddingVertical: 8 }}
           showsVerticalScrollIndicator={false}
           onEndReached={() => {
-            if (messagesQuery.hasNextPage) {
+            if (messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
               messagesQuery.fetchNextPage();
             }
           }}

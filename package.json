@@ -5,9 +5,31 @@
     "dev": "pnpm --filter @sovio/mobile dev",
     "dev:web": "pnpm --filter @sovio/web dev",
     "build": "pnpm --filter @sovio/web build",
-    "typecheck": "pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:edge": "cd supabase/functions && deno task test",
+    "test:integration": "pnpm --filter @sovio/integration-tests test",
+    "test:all": "pnpm test && pnpm test:edge",
+    "policies:snapshot": "node scripts/dump-pg-policies.mjs",
+    "typecheck": "pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit",
+    "lint": "eslint packages/core/src packages/tokens/src packages/ui/src apps/mobile/app apps/mobile/components apps/web/app apps/web/components",
+    "lint:fix": "eslint --fix packages/core/src packages/tokens/src packages/ui/src apps/mobile/app apps/mobile/components apps/web/app apps/web/components"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "@vitest/coverage-v8": "^4.1.4",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "tar": ">=7.4.3",
+      "rollup": ">=4.22.4",
+      "@xmldom/xmldom": ">=0.8.12"
+    }
   }
 }

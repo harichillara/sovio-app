@@ -27,4 +27,8 @@ export { QueueToast } from './QueueToast';
 export { InsightCard } from './InsightCard';
 export { QuotaMeter } from './QuotaMeter';
 
+export { withAlpha } from './styles';
+export { ToggleRow } from './ToggleRow';
+export { ErrorBoundary, ErrorFallback } from './ErrorBoundary';
+
 export type * from './types';
