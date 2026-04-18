@@ -48,10 +48,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@types/node": "^25.6.0",
     "@types/react": "~18.2.0",
     "cross-env": "^10.1.0",
     "eas-cli": "^10.2.4",
     "expo-atlas": "^0.4.3",
-    "typescript": "^5.4.0"
+    "typescript": "^6.0.3"
   }
 }
