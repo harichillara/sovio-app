@@ -11,8 +11,8 @@
   "dependencies": {
     "@sentry/nextjs": "^8.47.0",
     "@sovio/tokens": "workspace:*",
-    "@supabase/ssr": "^0.10.0",
-    "@supabase/supabase-js": "^2.101.1",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.3",
     "framer-motion": "^12.38.0",
     "next": "^15.5.15",
     "react": "18.2.0",
