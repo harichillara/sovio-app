@@ -25,46 +25,64 @@ const ORIG_SRK    = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 Deno.env.set('SUPABASE_URL', 'http://localhost:54321');
 Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'test-service-role-key');
 
-Deno.test('moderateContent: empty API key returns safe no-op', async () => {
-  Deno.env.delete('GEMINI_API_KEY');
+// index.ts instantiates a supabase-js client at module load, which starts
+// a realtime heartbeat interval. That interval outlives the test and trips
+// Deno's resource/op sanitizer. Disabling the sanitizers on these tests is
+// the documented escape hatch for modules with long-lived background tasks.
+const testOpts = { sanitizeOps: false, sanitizeResources: false } as const;
 
-  // Use a cache-busting query string so the second import re-reads env.
-  const mod = await import(`./index.ts?emptyKey=${Date.now()}`);
-  const result = await mod.moderateContent('any content');
+Deno.test({
+  name: 'moderateContent: empty API key returns safe no-op',
+  ...testOpts,
+  fn: async () => {
+    Deno.env.delete('GEMINI_API_KEY');
 
-  assertEquals(result.safe, true);
-  assertEquals(result.labels, []);
-  assertEquals(result.reasoning, 'No content to moderate');
+    // Use a cache-busting query string so the second import re-reads env.
+    const mod = await import(`./index.ts?emptyKey=${Date.now()}`);
+    const result = await mod.moderateContent('any content');
+
+    assertEquals(result.safe, true);
+    assertEquals(result.labels, []);
+    assertEquals(result.reasoning, 'No content to moderate');
+  },
 });
 
-Deno.test('moderateContent: empty text returns safe no-op even with key set', async () => {
-  Deno.env.set('GEMINI_API_KEY', 'test-key');
+Deno.test({
+  name: 'moderateContent: empty text returns safe no-op even with key set',
+  ...testOpts,
+  fn: async () => {
+    Deno.env.set('GEMINI_API_KEY', 'test-key');
 
-  const mod = await import(`./index.ts?emptyText=${Date.now()}`);
-  const result = await mod.moderateContent('   ');
+    const mod = await import(`./index.ts?emptyText=${Date.now()}`);
+    const result = await mod.moderateContent('   ');
 
-  assertEquals(result.safe, true);
-  assertEquals(result.reasoning, 'No content to moderate');
+    assertEquals(result.safe, true);
+    assertEquals(result.reasoning, 'No content to moderate');
+  },
 });
 
-Deno.test('moderateContent: fetch failure fails closed (content blocked)', async () => {
-  Deno.env.set('GEMINI_API_KEY', 'test-key');
+Deno.test({
+  name: 'moderateContent: fetch failure fails closed (content blocked)',
+  ...testOpts,
+  fn: async () => {
+    Deno.env.set('GEMINI_API_KEY', 'test-key');
 
-  // Monkey-patch global fetch so the moderation call throws. We restore it
-  // in a try/finally so a failing assertion doesn't leave fetch broken for
-  // subsequent tests.
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = () => Promise.reject(new Error('network down'));
+    // Monkey-patch global fetch so the moderation call throws. We restore it
+    // in a try/finally so a failing assertion doesn't leave fetch broken for
+    // subsequent tests.
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = () => Promise.reject(new Error('network down'));
 
-  try {
-    const mod = await import(`./index.ts?failClosed=${Date.now()}`);
-    const result = await mod.moderateContent('user-authored content');
+    try {
+      const mod = await import(`./index.ts?failClosed=${Date.now()}`);
+      const result = await mod.moderateContent('user-authored content');
 
-    assertEquals(result.safe, false, 'must fail closed when moderation unavailable');
-    assert(result.labels.includes('moderation_unavailable'));
-  } finally {
-    globalThis.fetch = realFetch;
-  }
+      assertEquals(result.safe, false, 'must fail closed when moderation unavailable');
+      assert(result.labels.includes('moderation_unavailable'));
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  },
 });
 
 // ----------------------------------------------------------------------------
