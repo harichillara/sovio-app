@@ -1,0 +1,23 @@
+Legend: production dependency, optional only, dev only
+
+@sovio/web@0.1.0 D:\Download\AI\Sovio\apps\web (PRIVATE)
+│
+│   dependencies:
+├── @sentry/nextjs@10.49.0
+├── @sovio/tokens@link:../../packages/tokens
+├── @supabase/ssr@0.10.2
+├── @supabase/supabase-js@2.103.3
+├── framer-motion@12.38.0
+├── next@15.5.15
+├── react@18.2.0
+├── react-dom@18.2.0
+├── zod@3.25.76
+│
+│   devDependencies:
+├── @next/bundle-analyzer@15.5.15
+├── @types/node@25.6.0
+├── @types/react@18.2.79
+├── cross-env@10.1.0
+└── typescript@5.9.3
+
+14 packages
