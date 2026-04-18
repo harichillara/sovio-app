@@ -9,7 +9,7 @@
     "analyze": "cross-env ANALYZE=true next build"
   },
   "dependencies": {
-    "@sentry/nextjs": "^8.47.0",
+    "@sentry/nextjs": "^10.49.0",
     "@sovio/tokens": "workspace:*",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.3",
