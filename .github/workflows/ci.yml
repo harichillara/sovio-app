@@ -67,10 +67,11 @@ jobs:
         with:
           version: 10
 
+      # No `cache: pnpm` — the audit job doesn't run pnpm install, so the
+      # cache path doesn't exist and setup-node's post-action errors out.
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
       # --prod filters dev-only vulnerabilities (vitest, eslint, etc.) that
       # don't ship to users. --audit-level=high blocks only on high/critical.
