@@ -14,13 +14,13 @@
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
     "framer-motion": "^12.38.0",
-    "next": "^14.2.0",
+    "next": "^15.5.15",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^14.2.0",
+    "@next/bundle-analyzer": "^15.5.15",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "cross-env": "^7.0.3",
