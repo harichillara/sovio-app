@@ -10,7 +10,7 @@
     "./ThemeContext": "./src/ThemeContext.tsx"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^6.0.3"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

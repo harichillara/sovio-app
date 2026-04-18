@@ -88,8 +88,10 @@ export async function dismissSuggestion(
   userId: string,
   reason?: string,
 ): Promise<void> {
-  const update: Record<string, unknown> = { status: 'dismissed' };
-  if (reason) update.dismiss_reason = reason;
+  const update = {
+    status: 'dismissed' as const,
+    ...(reason ? { dismiss_reason: reason } : {}),
+  };
 
   const { error } = await supabase
     .from('suggestions')

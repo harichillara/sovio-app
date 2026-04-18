@@ -20,16 +20,16 @@
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
     "@vitest/coverage-v8": "^4.1.4",
-    "eslint": "^10.2.0",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "typescript": "^5.4.0",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.4"
   },
   "pnpm": {
     "overrides": {
       "tar": ">=7.4.3",
       "rollup": ">=4.22.4",
-      "@xmldom/xmldom": ">=0.8.10"
+      "@xmldom/xmldom": ">=0.8.12"
     }
   }
 }

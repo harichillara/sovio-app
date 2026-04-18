@@ -1,6 +1,26 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@sovio/tokens'],
+  transpilePackages: ['@sovio/tokens', '@sovio/core'],
+
+  // @sovio/core is a cross-platform package shared with the Expo mobile app.
+  // It imports react-native + expo-* at module level for platform-gated
+  // logic. Next 15's webpack can't parse react-native's Flow source, so we
+  // redirect these imports to minimal web stubs. Runtime code paths that
+  // touch these APIs are gated on Platform.OS === 'web' and never execute.
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      'react-native$': path.resolve(__dirname, 'stubs/react-native-stub.js'),
+      'expo-secure-store': path.resolve(__dirname, 'stubs/expo-stub.js'),
+      'expo-auth-session': path.resolve(__dirname, 'stubs/expo-stub.js'),
+      'expo-linking': path.resolve(__dirname, 'stubs/expo-stub.js'),
+      'expo-notifications': path.resolve(__dirname, 'stubs/expo-stub.js'),
+      'expo-device': path.resolve(__dirname, 'stubs/expo-stub.js'),
+    };
+    return config;
+  },
 
   async headers() {
     return [
