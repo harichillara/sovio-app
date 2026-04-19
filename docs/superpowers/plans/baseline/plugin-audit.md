@@ -2,6 +2,20 @@
 
 Generated 2026-04-18. All version pins below come from the Expo docs URLs listed under "Evidence" at the bottom. A cell of `—` means the doc page did not list a pin for that SDK and the entry needs manual verification before the corresponding phase runs.
 
+## TL;DR — per-SDK must-dos for the implementer
+
+| SDK | Key mandatory action in this hop | Docs anchor |
+|---|---|---|
+| 52 | New Architecture opt-in default for new projects; `react-native-screens` 3.x→4.x major jump — test all navigation stack transitions | [#sdk-52](#gotchas--new-defaults-per-sdk) |
+| 53 | React 19 is a hard requirement; `forwardRef` pattern changes, `useRef` requires initial argument, AppDelegate migrates to Swift | [#sdk-53](#gotchas--new-defaults-per-sdk) |
+| 54 | JSC removed — Hermes is mandatory; last SDK with Legacy Architecture opt-out | [#sdk-54](#gotchas--new-defaults-per-sdk) |
+| 55 | New Architecture mandatory; remove `newArchEnabled` flag; remove top-level `notification` key from app.json | [#sdk-55](#gotchas--new-defaults-per-sdk) |
+
+**Top 3 risks before Phase 1 begins:**
+1. `@sentry/react-native` is three major versions behind (`^5.24.0` vs `^8.8.0`); v5→v6→v7→v8 each have breaking API and native-build changes — treat as a dedicated parallel workstream.
+2. `expo-updates` shows a version anomaly in SDK 54 (`29.0.16` vs expected `0.28.x` pattern) — must verify via `npx expo install` in a clean SDK 54 project before Phase 3 runs.
+3. SDK 55 mandates New Architecture for all native libraries — a third-party library audit is required before the Phase 4 upgrade to avoid runtime crashes.
+
 ## Core runtime pairings (from each SDK's main version page)
 
 | SDK | react-native | react | metro | notes |
@@ -18,7 +32,7 @@ Generated 2026-04-18. All version pins below come from the Expo docs URLs listed
 
 All pins sourced from `packages/<module>/package.json` on the `sdk-NN` branch of `github.com/expo/expo`. These are the versions `expo install --fix` will resolve to for each SDK target.
 
-| Module | 51 (current) | 52 | 53 | 54 | 55 | Breaking changes of note |
+| Module | SDK 51 (baseline) | SDK 52 | SDK 53 | SDK 54 | SDK 55 | Breaking changes of note |
 |---|---|---|---|---|---|---|
 | expo-router | ~3.5.0 | ~4.0.22 | ~5.1.11 | ~6.0.23 | ~55.0.12 | v3→v4: `Href` type lost generic; v4→v5: root `<Slot>` wrap required; v5→v6: `ExpoRequest`/`ExpoResponse` removed, gesture-handler no longer auto-injected; v6→v55: `reset`→`resetOnFocus`, `NativeTabs.Trigger.TabBar` removed |
 | expo-secure-store | ~13.0.0 | ~14.0.1 | ~14.2.4 | ~15.0.8 | ~55.0.13 | v13→v14: iOS min bumped to 15.1; no plugin schema changes SDK 52–55 |
@@ -29,7 +43,7 @@ All pins sourced from `packages/<module>/package.json` on the `sdk-NN` branch of
 | expo-crypto | ~13.0.0 | ~14.0.2 | ~14.1.5 | ~15.0.8 | ~55.0.14 | No breaking changes across SDK 52–55 |
 | expo-device | ~6.0.0 | ~7.0.3 | ~7.1.4 | ~8.0.10 | ~55.0.15 | No breaking changes across SDK 52–55 |
 | expo-linking | ~6.3.0 | ~7.0.5 | ~7.1.7 | ~8.0.11 | ~55.0.13 | SDK 53: Android package name no longer auto-added as URL scheme — check linking config |
-| expo-updates | ~0.25.0 | ~0.27.5 | ~0.28.18 | ~29.0.16 | ~55.0.20 | **Version anomaly in SDK 54**: jumps to `29.x` then `55.x` — needs manual verification; SDK 53: long-deprecated TypeScript types removed |
+| expo-updates | ~0.25.0 | ~0.27.5 | ~0.28.18 | ~29.0.16 ⚠️ (unverified) | ~55.0.20 | **Version anomaly in SDK 54**: jumps to `29.x` then `55.x` — needs manual verification; SDK 53: long-deprecated TypeScript types removed |
 | expo-status-bar | ~1.12.1 | ~2.0.1 | ~2.2.3 | ~3.0.9 | ~55.0.5 | No breaking changes or plugin schema changes across SDK 52–55 |
 | expo-web-browser | ~13.0.0 | ~14.0.2 | ~14.2.0 | ~15.0.10 | ~55.0.14 | No breaking changes across SDK 52–55 |
 | expo-auth-session | ~5.5.0 | ~6.0.3 | ~6.2.1 | ~7.0.10 | ~55.0.14 | SDK 55 adds `extraHeaders` option to `TokenRequest`/`RevokeTokenRequest` (additive); no breaking changes |
@@ -37,13 +51,13 @@ All pins sourced from `packages/<module>/package.json` on the `sdk-NN` branch of
 
 ## Sentry React Native
 
-| SDK target | Recommended @sentry/react-native | Plugin path in app.json | Breaking changes |
+| SDK | Recommended @sentry/react-native | Plugin path in app.json | Breaking changes |
 |---|---|---|---|
-| 51 (current) | ^5.24.0 | `@sentry/react-native/expo` | baseline |
-| 52 | ^5.35.0+ | `@sentry/react-native/expo` | v5.x still compatible (peerDep: RN >=0.65, Expo >=49); plugin schema unchanged |
-| 53 | ^6.x or ^7.x | `@sentry/react-native/expo` | **v5→v6 breaking**: `ReactNavigationInstrumentation` API changed; tracing options moved into `Sentry.init()`; `idleTimeout`→`idleTimeoutMs`; `maxTransactionDuration`→`finalTimeoutMs` |
-| 54 | ^7.x | `@sentry/react-native/expo` | v7 min supported Expo SDK is 50; `captureUserFeedback` removed (use `captureFeedback`); `autoSessionTracking`→`enableAutoSessionTracking` |
-| 55 | ^8.8.0 | `@sentry/react-native/expo` | **v8 breaking**: iOS 15.0+ required (was 11.0+); AGP 7.4.0+ and Kotlin 1.8+ required; Sentry CLI v3 required; must disable `autoInstallation` in Android gradle plugin to avoid version-mix crash |
+| SDK 51 (baseline) | ^5.24.0 | `@sentry/react-native/expo` | baseline |
+| SDK 52 | ^5.35.0+ | `@sentry/react-native/expo` | v5.x still compatible (peerDep: RN >=0.65, Expo >=49); plugin schema unchanged |
+| SDK 53 | ^6.x or ^7.x | `@sentry/react-native/expo` | **v5→v6 breaking**: `ReactNavigationInstrumentation` API changed; tracing options moved into `Sentry.init()`; `idleTimeout`→`idleTimeoutMs`; `maxTransactionDuration`→`finalTimeoutMs` |
+| SDK 54 | ^7.x | `@sentry/react-native/expo` | v7 min supported Expo SDK is 50; `captureUserFeedback` removed (use `captureFeedback`); `autoSessionTracking`→`enableAutoSessionTracking` |
+| SDK 55 | ^8.8.0 | `@sentry/react-native/expo` | **v8 breaking**: iOS 15.0+ required (was 11.0+); AGP 7.4.0+ and Kotlin 1.8+ required; Sentry CLI v3 required; must disable `autoInstallation` in Android gradle plugin to avoid version-mix crash |
 
 > **RISK**: Current pin `^5.24.0` is three major versions behind latest `8.8.0`. This is a **dedicated migration task** — v5→v6→v7→v8 each have breaking changes. The plugin path `@sentry/react-native/expo` itself is stable in app.json across all SDK versions audited, but the JavaScript API and native build requirements change significantly.
 >
