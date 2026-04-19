@@ -46,8 +46,7 @@
           "locationWhenInUsePermission": "Sovio uses your location to show nearby plans and suggestions."
         }
       ],
-      "@sentry/react-native/expo",
-      "@sentry/react-native"
+      "@sentry/react-native/expo"
     ],
     "notification": {
       "icon": "./assets/icon.png",

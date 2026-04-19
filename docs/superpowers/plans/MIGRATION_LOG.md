@@ -78,7 +78,7 @@ The following manual device tests must be completed by the developer before the 
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
 - [ ] Phase 2 — Expo 53 (React 19)
-- [ ] Phase 3 — Expo 54 (+ Sentry RN 6)
+- [ ] Phase 3 — Expo 54 (+ Sentry RN 5 → 8 single jump)
 - [ ] Phase 4 — Expo 55
 - [ ] Phase 5 — Companion ecosystem
 - [ ] Phase 6 — Web cleanup
