@@ -121,7 +121,7 @@ Baseline captured on `release/expo-55-migration` at commit <SHA from `git rev-pa
 - [ ] Phase 0 — baseline
 - [ ] Phase 1 — Expo 52
 - [ ] Phase 2 — Expo 53 (React 19)
-- [ ] Phase 3 — Expo 54 (+ Sentry RN 6)
+- [ ] Phase 3 — Expo 54 (+ Sentry RN 5 → 8 single jump)
 - [ ] Phase 4 — Expo 55
 - [ ] Phase 5 — Companion ecosystem
 - [ ] Phase 6 — Web cleanup
@@ -434,42 +434,60 @@ cd D:/Download/AI/Sovio
 pnpm typecheck && pnpm test
 ```
 
-### Task 3.2: Bump `@sentry/react-native` 5 → 6
+### Task 3.2: Bump `@sentry/react-native` 5 → 8 (single jump — see audit §Sentry)
 
-- [ ] **Step 1: Consult Sentry RN 6 migration guide**
+Rationale: each intermediate Sentry major (6, 7) only overlaps a single Expo SDK band. Stepping would require two throwaway bumps. Sovio's Sentry surface is minimal (one init call + one scrubber helper), so one direct jump is lower-risk than three.
 
-Use WebFetch on `https://docs.sentry.io/platforms/react-native/migration/` to record breaking changes in `docs/superpowers/plans/baseline/sentry-rn-6-notes.md`.
+- [ ] **Step 1: Pre-bump preflight**
 
-- [ ] **Step 2: Install**
+Confirm iOS deployment target ≥ 15.0 in the EAS build profile (`eas.json`) and any Podfile if prebuild has been run. Sentry v8 requires this. If currently lower, bump first and commit separately before touching Sentry.
+
+- [ ] **Step 2: Refactor the scrubber for span-shape**
+
+Open `packages/core/src/observability/sentryScrubber.ts`. Add a new export `scrubSentrySpan` that:
+- Accepts the span object shape (`description`, `op`, `data`, `tags`, `start_timestamp`, `timestamp`) — no `exception`/`breadcrumbs`/`user` fields.
+- Scrubs PII from `description` (URLs/paths) and from `data.http.url`, `data.http.query`, `data.url`.
+- Keeps the existing `scrubSentryEvent` export unchanged for the `beforeSend` path (still receives full events).
+
+Add a unit test for `scrubSentrySpan` mirroring the existing `scrubSentryEvent` test file.
+
+- [ ] **Step 3: Install v8**
 
 ```bash
 cd D:/Download/AI/Sovio/apps/mobile
-pnpm add @sentry/react-native@^6.0.0
+pnpm add @sentry/react-native@^8.6.0
 ```
 
-- [ ] **Step 3: Update init code**
+- [ ] **Step 4: Update init call**
 
-Search for `Sentry.init` in `apps/mobile/app/` and `apps/mobile/index.js`. Apply any option renames from the migration doc.
+In `apps/mobile/app/_layout.tsx:23`, replace `beforeSendTransaction: scrubSentryEvent` with `beforeSendSpan: scrubSentrySpan`. Keep `beforeSend: scrubSentryEvent` unchanged. Remove any now-obsolete option renames (`autoSessionTracking` → already absent in Sovio code, verify).
 
-- [ ] **Step 4: Verify plugin still loads**
+- [ ] **Step 5: Verify plugin path is unchanged**
 
-Check `apps/mobile/app.json` `plugins` array still references `@sentry/react-native/expo` — Sentry 6 kept this path.
+`apps/mobile/app.json:49` already uses `@sentry/react-native/expo` — this path is stable v5→v8. No change.
 
-- [ ] **Step 5: Smoke test error capture**
+- [ ] **Step 6: Typecheck + unit tests**
 
-Force a test throw in a tab route; confirm the event lands in the Sentry dashboard.
+```bash
+cd D:/Download/AI/Sovio
+pnpm typecheck && pnpm test
+```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Smoke test error + span capture**
+
+Force a test throw in a tab route; confirm the event lands in the Sentry dashboard. Also trigger a traced operation (e.g. a query) and verify the span appears scrubbed.
+
+- [ ] **Step 8: Commit**
 
 ```bash
 cd D:/Download/AI/Sovio
 git add -A
-git commit -m "feat(mobile): upgrade to Expo SDK 54 + Sentry RN 6"
+git commit -m "feat(mobile): upgrade to Expo SDK 54 + Sentry RN 8"
 ```
 
 ### Phase 3 gate
 
-Typecheck + tests + web build + mobile smoke + Sentry event delivery confirmed. Log ☑ Phase 3.
+Typecheck + tests + web build + mobile smoke + Sentry event + span delivery confirmed. Log ☑ Phase 3.
 
 ---
 
