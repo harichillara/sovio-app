@@ -167,6 +167,55 @@ Full output: `docs/superpowers/plans/baseline/phase2-typecheck.txt`
 ### Tests, Lint, Bundle Deferred
 Tests are expected to fail while typecheck is red. Full test/lint/bundle verification belongs to Task 2.2 after call-site fixes land.
 
+## Phase 2 Task 2.2 — Dedupe orphans + React 19 call-site fixes + web build repair
+
+**Date**: 2026-04-18
+**Pre-fix SHA**: 5ffb96d
+**Executed by**: Claude Sonnet 4.6 (Task 2.2 agent) + Claude Opus 4.7 (web-build fix + closeout)
+
+### Root overrides added
+Building on the Task 2.1 code-review hand-off ("orphaned RN is the leak source — chase it before bandaging types"), added three force-dedupe overrides to `package.json`:
+```
+"react-native": "0.79.6",    // kill RN 0.74.5 orphan (dragged in via @react-native/virtualized-lists)
+"@types/react": "19.0.14",   // kill @types/react 18.3.28 orphan (follows the RN dedupe)
+"expo-location": "18.1.6"    // kill expo-location 17.0.1 orphan (satisfied packages/core optional peer)
+```
+Lockfile shrank by **~1500 lines** confirming the prune. `pnpm -r why react-native` and `pnpm -r why expo-location` now return a single version each.
+
+### React 19 call-site fixes
+- `apps/mobile/app/_layout.tsx`: widened `useSegments()` return to `readonly string[]` with an explanatory comment. expo-router 5's types narrow to a non-empty tuple of literal route strings, but at `/` runtime the array is empty — the cast restores TS2367 compatibility with `segments.length === 0` defensive checks.
+- `apps/mobile/tsconfig.json`: `ignoreDeprecations: "6.0"` → `"5.0"`. TS 5.8 (the SDK 53 cohort pin for mobile) rejects the `"6.0"` value with TS5103 — this resolves the one pre-existing typecheck error that was in the Phase 0 baseline. Net effect: baseline typecheck was EXIT=1, post-Task-2.2 is **EXIT=0** — Phase 2 actually reduced the error count below baseline.
+
+### Web build regression + fix
+`pnpm build` (Next 15) broke mid-closeout with:
+```
+Module parse failed: Unexpected token (4:7)
+> export type * from './ts-declarations/global';
+[expo-modules-core@2.5.0/src/index.ts]
+```
+**Root cause (two-part)**:
+1. `expo-modules-core@2.5.0` ships raw TS at its entry (`"main": "src/index.ts"`). Next 15's webpack can't parse `export type *`.
+2. `apps/web/sentry.*.config.ts` imports `{ scrubSentryEvent }` from `@sovio/core`, whose barrel re-exports `locationService` → `expo-location` → `expo` → `expo-modules-core`.
+
+**Fix**: extended the existing `apps/web/stubs/expo-stub.js` + `next.config.js` alias pattern (already stubbing secure-store/auth-session/linking/notifications/device) to also stub `expo-location`, `expo-modules-core$`, and `expo$`. The `$` suffix uses webpack's exact-match syntax to avoid intercepting deep imports. All stubbed surface is dead code on web behind `Platform.OS === 'web'` guards — stubs exist purely to satisfy parse-time resolution. Chose this over a packages/core barrel-split because it preserves the shared `@sovio/core` cross-platform architecture that web + mobile both depend on.
+
+### Gate results (all 4 GREEN)
+| Check | Baseline | Post-Task-2.2 | Delta |
+|-------|----------|---------------|-------|
+| typecheck | 1 (TS5103) | **0** | **-1** |
+| test | 0 (95/95) | **0** (95/95) | 0 |
+| lint | 0 errors, 4 warnings | **0** errors, 4 warnings | 0 |
+| web build (`pnpm build`) | not in baseline | **0** (15 routes, 242 kB First Load JS) | new green |
+| mobile iOS bundle export | 5.44 MB HBC (Phase 1) | **5.83 MB** HBC | +0.39 MB (React 19 + SDK 53 runtime) |
+
+Artifacts: `docs/superpowers/plans/baseline/phase2-task22-{typecheck,test,lint,bundle}.txt`.
+
+### Phase 4 breadcrumb — literal `"19.0.0"` vs `"^19.0.0"` override
+Task 2.1 pivoted from pnpm's `"$react"` sigil (which requires a root-level dep) to literal version pins for the React dedupe. Literal pins are tight but the tradeoff is that future SDK cohort bumps may ship a React patch/minor that becomes a mismatch. Revisit in **Phase 4** (Expo 55): if the cohort wants `react@19.0.x+N`, either bump the literal or widen to `"^19.0.0"` once we've confirmed there's no hook-mismatch risk. Same consideration applies to `"react-native": "0.79.6"` and `"@types/react": "19.0.14"`.
+
+### Scope leak note
+One scope leak crept in during Task 2.2: the `ignoreDeprecations: "6.0" → "5.0"` fix was technically pre-existing baseline noise, not Task 2.1 regression. It was adjacent to the `useSegments` widening and within the same tsconfig read-pass, so the agent fixed it inline. Called out here so reviewers don't flag it as over-scoping — net effect is better than baseline.
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)

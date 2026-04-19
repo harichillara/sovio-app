@@ -1,0 +1,4 @@
+
+> sovio@ typecheck D:\Download\AI\Sovio
+> pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit
+

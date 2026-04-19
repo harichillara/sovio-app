@@ -29,7 +29,10 @@ function RouteGuard() {
   const session = useAuthStore((s) => s.session);
   const isOnboarded = useAuthStore((s) => s.isOnboarded);
   const router = useRouter();
-  const segments = useSegments();
+  // expo-router 5 types `useSegments` as a non-empty tuple of literal route
+  // strings, but at runtime the root path `/` yields `[]`. Widen to a plain
+  // string array so defensive length/equality checks below stay meaningful.
+  const segments = useSegments() as readonly string[];
 
   useEffect(() => {
     if (isLoading) {

@@ -31,7 +31,10 @@
       "rollup": ">=4.22.4",
       "@xmldom/xmldom": ">=0.8.12",
       "react": "19.0.0",
-      "react-dom": "19.0.0"
+      "react-dom": "19.0.0",
+      "react-native": "0.79.6",
+      "@types/react": "19.0.14",
+      "expo-location": "18.1.6"
     }
   }
 }

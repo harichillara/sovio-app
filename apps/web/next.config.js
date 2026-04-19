@@ -18,6 +18,13 @@ const nextConfig = {
       'expo-linking': path.resolve(__dirname, 'stubs/expo-stub.js'),
       'expo-notifications': path.resolve(__dirname, 'stubs/expo-stub.js'),
       'expo-device': path.resolve(__dirname, 'stubs/expo-stub.js'),
+      'expo-location': path.resolve(__dirname, 'stubs/expo-stub.js'),
+      // expo-modules-core@2.5.0 ships raw TS at its entry; alias so webpack
+      // never attempts to parse it. Also stub `expo` itself because its
+      // `src/Expo.ts` entry re-exports from expo-modules-core and uses
+      // type-only re-export syntax that Next's SWC loader rejects.
+      'expo-modules-core$': path.resolve(__dirname, 'stubs/expo-stub.js'),
+      'expo$': path.resolve(__dirname, 'stubs/expo-stub.js'),
     };
     return config;
   },
