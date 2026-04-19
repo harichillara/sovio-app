@@ -76,6 +76,20 @@ The following manual device tests must be completed by the developer before the 
 - Web (Expo web): `pnpm dev:web` — confirm no Metro/bundler errors
 - OTA update flow: confirm `expo-updates` connects to EAS Update channel
 
+## Phase 1 Task 1.2 — Pin newArchEnabled=false + Metro resolution check
+
+**Date**: 2026-04-18
+**Executed by**: Claude Sonnet 4.6 (automated)
+
+### Changes
+- `apps/mobile/app.json`: added `"newArchEnabled": false` as explicit opt-out under `expo`.
+
+### Metro workspace resolution check
+Headless substitute for `expo start --no-dev --minify`:
+`timeout 180 npx expo export --platform ios --output-dir .expo-phase1-task12-export`
+
+Result: EXIT=0 — PASS. 1778 iOS modules, 5.44 MB HBC bundle (matches Task 1.1 baseline). No "Unable to resolve module @sovio/*" errors. Captured to `docs/superpowers/plans/baseline/phase1-task12-bundle.txt`.
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
