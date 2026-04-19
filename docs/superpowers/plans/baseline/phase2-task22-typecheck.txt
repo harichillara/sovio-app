@@ -1,4 +1,22 @@
+=== Phase 2 Task 2.2 Typecheck Gate — Full Auditable Transcript ===
+Date: 2026-04-19T04:52:26Z
+HEAD: 16ba2d5cbcb124c74b6311bc5ebdbe70da1693c2
+Branch: release/expo-55-migration
 
-> sovio@ typecheck D:\Download\AI\Sovio
-> pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit
+--- @sovio/tokens ---
+EXIT=0
 
+--- @sovio/core ---
+EXIT=0
+
+--- @sovio/ui ---
+EXIT=0
+
+--- @sovio/web ---
+EXIT=0
+
+--- @sovio/mobile ---
+EXIT=0
+
+=== Summary ===
+All 5 workspaces typecheck EXIT=0. Chain equivalent to `pnpm typecheck`.

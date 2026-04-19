@@ -208,7 +208,14 @@ Module parse failed: Unexpected token (4:7)
 | web build (`pnpm build`) | not in baseline | **0** (15 routes, 242 kB First Load JS) | new green |
 | mobile iOS bundle export | 5.44 MB HBC (Phase 1) | **5.83 MB** HBC | +0.39 MB (React 19 + SDK 53 runtime) |
 
-Artifacts: `docs/superpowers/plans/baseline/phase2-task22-{typecheck,test,lint,bundle}.txt`.
+Artifacts: `docs/superpowers/plans/baseline/phase2-task22-{typecheck,test,lint,bundle,webbuild}.txt`. The typecheck artifact is a per-workspace transcript with explicit `EXIT=0` lines per project (earlier capture only contained the pnpm command echo because `tsc` is silent on success; re-captured in commit 9d3a5e2-placeholder for audit traceability).
+
+### Review findings closed + deferred
+- **Spec review (PASS)**: flagged missing web-build artifact — closed in follow-up commit 16ba2d5.
+- **Code review (PASS-WITH-NOTES)**: three LOW findings, all non-blocking:
+  1. Typecheck artifact lacked per-project evidence — closed by re-capturing with explicit EXIT lines.
+  2. `as readonly string[]` on `useSegments()` widens to non-null elements despite runtime possibly yielding `undefined` at `segments[0]`. Comparisons against literal strings are defensive (any non-match falls through), so behavior is correct; tightening to `readonly (string | undefined)[]` is a nit. **Deferred to Phase 2 tail** if we add any ref-sensitive routing logic.
+  3. Web build is now a promoted gate but not wired into CI — the original regression slipped through Task 2.1 because `pnpm build` wasn't part of the baseline gate loop. **Deferred to Task 2.3 (Phase 2 tail): add `web-build` job to `.github/workflows/ci.yml`** so future cohort bumps can't silently break it.
 
 ### Phase 4 breadcrumb — literal `"19.0.0"` vs `"^19.0.0"` override
 Task 2.1 pivoted from pnpm's `"$react"` sigil (which requires a root-level dep) to literal version pins for the React dedupe. Literal pins are tight but the tradeoff is that future SDK cohort bumps may ship a React patch/minor that becomes a mismatch. Revisit in **Phase 4** (Expo 55): if the cohort wants `react@19.0.x+N`, either bump the literal or widen to `"^19.0.0"` once we've confirmed there's no hook-mismatch risk. Same consideration applies to `"react-native": "0.79.6"` and `"@types/react": "19.0.14"`.
