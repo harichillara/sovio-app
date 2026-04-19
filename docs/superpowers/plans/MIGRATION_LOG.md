@@ -51,6 +51,7 @@ Baseline captured on `release/expo-55-migration` at commit 9c4f48a337b165a1a83e1
 | typecheck | 1 | 1 | 0 (same TS5103 pre-existing error only) |
 | test | 0 | 0 | 0 (9 files, 95 tests — all green) |
 | lint | 0 | 0 | 0 (same 4 warnings, 0 errors) |
+| bundle export (iOS) | 0 PASS | n/a | PASS — 1778 modules, 5.44 MB HBC |
 
 No new typecheck errors introduced. The pre-existing TS5103 error in `apps/mobile/tsconfig.json` persists.
 
@@ -60,9 +61,11 @@ No new typecheck errors introduced. The pre-existing TS5103 error in `apps/mobil
 3. 23 deprecated subdependencies (babel plugins, glob, rimraf, sudo-prompt) — pre-existing, not introduced by this bump.
 4. Build scripts ignored (sandboxed): `@sentry/cli@2.42.4`, `@sentry/cli@2.58.5`, `sharp@0.34.5`.
 
-### Metro Bundle Smoke Test (Step 6)
-Command: `timeout 120 npx expo export --platform ios --output-dir /tmp/phase1-export`
-Result: EXIT=124 (timeout). Metro Bundler started successfully but did not complete within 120s. No red-screen error was observed before timeout. This is expected in a non-native CI environment without Xcode/Android SDK.
+### Metro Bundle Smoke Test (Step 5)
+Command: `timeout 90 npx expo export --platform ios --output-dir .expo-phase1-export`
+Result: EXIT=0 — PASS. "Exported: .expo-phase1-export" confirmed. iOS bundle produced (5.44 MB HBC, 1778 modules, 20 195ms cold-start). Captured to `docs/superpowers/plans/baseline/phase1-bundle.txt`.
+
+`expo install --fix` output (re-run on already-aligned SDK 52 tree): "Dependencies are up to date". Captured to `docs/superpowers/plans/baseline/phase1-expo-install-fix.txt`.
 
 ### Device Smoke Tests NOT Performed (Deferred to Gate)
 The following manual device tests must be completed by the developer before the Phase 1 gate passes:
@@ -73,7 +76,7 @@ The following manual device tests must be completed by the developer before the 
 
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
-- [ ] Phase 1 — Expo 52
+- [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
 - [ ] Phase 2 — Expo 53 (React 19)
 - [ ] Phase 3 — Expo 54 (+ Sentry RN 6)
 - [ ] Phase 4 — Expo 55
