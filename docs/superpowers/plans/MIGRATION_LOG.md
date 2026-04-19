@@ -42,8 +42,10 @@ Baseline captured on `release/expo-55-migration` at commit 9c4f48a337b165a1a83e1
 | react-native | 0.74.5 | 0.76.9 |
 | react-native-safe-area-context | 4.10.5 | 4.12.0 |
 | react-native-screens | 3.31.1 | ~4.4.0 |
-| @types/react | 18.2.79 | ~18.3.12 |
-| typescript | 6.0.3 | ^5.3.3 (downgraded per SDK 52 requirement) |
+| @types/react | 18.2.79 | ~18.3.28 |
+| typescript (apps/mobile) | 6.0.3 | ^5.9.3 (downgraded per SDK 52 requirement) |
+
+> **Known divergence**: root `package.json` still pins `typescript: ^6.0.3` for web + shared packages. The mobile app intentionally uses TS 5.x until Phase 5 (companion ecosystem), at which point the toolchains will be reconciled. pnpm resolves both versions cleanly via hoisting — no build-time conflict. Documented here so reviewers don't flag it as a regression.
 
 ### Exit Codes (Post-Bump vs Baseline)
 | Check | Post-Bump | Baseline | Delta |
