@@ -1,0 +1,25 @@
+Scope: all 7 workspace projects
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 252, reused 251, downloaded 0, added 0
+Progress: resolved 779, reused 700, downloaded 0, added 0
+Progress: resolved 1436, reused 1358, downloaded 0, added 0
+Progress: resolved 1531, reused 1427, downloaded 0, added 0
+ WARN  23 deprecated subdependencies found: @babel/plugin-proposal-async-generator-functions@7.20.7, @babel/plugin-proposal-class-properties@7.18.6, @babel/plugin-proposal-logical-assignment-operators@7.20.7, @babel/plugin-proposal-nullish-coalescing-operator@7.18.6, @babel/plugin-proposal-numeric-separator@7.18.6, @babel/plugin-proposal-object-rest-spread@7.20.7, @babel/plugin-proposal-optional-catch-binding@7.18.6, @babel/plugin-proposal-optional-chaining@7.21.0, @oclif/screen@3.0.8, @xmldom/xmldom@0.8.12, glob@10.5.0, glob@6.0.4, glob@7.1.6, glob@7.2.3, inflight@1.0.6, lodash.get@4.4.2, osenv@0.1.5, querystring@0.2.1, rimraf@2.4.5, rimraf@2.6.3, rimraf@3.0.2, sudo-prompt@9.1.1, sudo-prompt@9.2.1
+Progress: resolved 1543, reused 1442, downloaded 0, added 0
+Packages: +151 -371
++++++++++++++++++++++++---------------------------------------------------------
+Progress: resolved 1543, reused 1442, downloaded 0, added 12
+Progress: resolved 1543, reused 1442, downloaded 0, added 17
+Progress: resolved 1543, reused 1442, downloaded 0, added 18
+Progress: resolved 1543, reused 1442, downloaded 0, added 19
+Progress: resolved 1543, reused 1442, downloaded 0, added 19, done
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @sentry/cli@2.45.0, @sentry/cli@2.58.5,             │
+│   sharp@0.34.5.                                                              │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Done in 13.9s using pnpm v10.33.0

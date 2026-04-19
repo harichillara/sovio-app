@@ -90,6 +90,83 @@ Headless substitute for `expo start --no-dev --minify`:
 
 Result: EXIT=0 — PASS. 1778 iOS modules, 5.44 MB HBC bundle (matches Task 1.1 baseline). No "Unable to resolve module @sovio/*" errors. Captured to `docs/superpowers/plans/baseline/phase1-task12-bundle.txt`.
 
+## Phase 2 Task 2.1 — Coordinated React 19 + Expo SDK 53 bump (typecheck INTENTIONALLY red)
+
+**Date**: 2026-04-18
+**Pre-bump SHA**: 43d5c7658bcb75047bd904f4e6246855cec51ceb
+**Executed by**: Claude Opus 4.7 (automated)
+
+### Diff Stats
+- `apps/mobile/package.json`: 48 lines changed (+/-)
+- `apps/web/package.json`: 6 lines changed
+- `packages/core/package.json`: 2 lines
+- `packages/tokens/package.json`: 2 lines
+- `packages/ui/package.json`: unchanged (already `react: "*"`)
+- `package.json` (root): 4 lines (added 2 overrides)
+- `pnpm-lock.yaml`: +937 / -1272 (net shrink ~335 lines)
+
+### Cohort Pins Resolved by `expo install --fix` (SDK 53)
+
+| Package | Before (SDK 52) | After (SDK 53) |
+|---|---|---|
+| expo | ~52.0.49 | ~53.0.27 |
+| @expo/vector-icons | ^14.0.4 | ^14.1.0 |
+| @sentry/react-native | ^6.10.0 | ^6.14.0 |
+| expo-apple-authentication | ~7.1.3 | ~7.2.4 |
+| expo-auth-session | ~6.0.3 | ~6.2.1 |
+| expo-constants | ~17.0.8 | ~17.1.8 |
+| expo-crypto | ~14.0.2 | ~14.1.5 |
+| expo-device | ~7.0.3 | ~7.1.4 |
+| expo-linking | ~7.0.5 | ~7.1.7 |
+| expo-location | ~18.0.10 | ~18.1.6 |
+| expo-notifications | ~0.29.14 | ~0.31.5 |
+| expo-router | ~4.0.22 | ~5.1.11 |
+| expo-secure-store | ~14.0.1 | ~14.2.4 |
+| expo-status-bar | ~2.0.1 | ~2.2.3 |
+| expo-updates | ~0.27.5 | ~0.28.18 |
+| expo-web-browser | ~14.0.2 | ~14.2.0 |
+| react | 18.3.1 | 19.0.0 |
+| react-dom | 18.3.1 | 19.0.0 |
+| react-native | 0.76.9 | 0.79.6 |
+| react-native-safe-area-context | 4.12.0 | 5.4.0 |
+| react-native-screens | 4.4.0 | ~4.11.1 |
+| react-native-web | ~0.19.13 | ^0.20.0 |
+| @types/react | ~18.3.28 | ~19.0.14 |
+| typescript (mobile) | ^5.9.3 | ~5.8.3 (downgrade forced by expo SDK 53 peer) |
+
+Note: the plan anticipated RN 0.77.x; SDK 53 actually cohort-pins RN **0.79.6**. The plan also anticipated a stable `typescript ^5.9.x` on mobile; `expo install --fix` downgraded it to `~5.8.3` (SDK 53's expected TS). Workspace-level TS stays `^6.0.3`; mobile is the lone TS 5.x holdout (documented already in Phase 1 log re: TS divergence).
+
+### Root pnpm Overrides Added
+The spec originally proposed `react: "$react"` / `react-dom: "$react-dom"` — that syntax requires the name to be a direct dependency of the root, which it is not in this monorepo (pnpm errored with `Cannot resolve version $react in overrides`). Pivoted to literal version pinning, which achieves the same dedupe goal:
+- `react: "19.0.0"` — dedupe React across workspace
+- `react-dom: "19.0.0"` — dedupe React DOM across workspace
+
+### Peer Dependency Bumps
+- `@sovio/core`: react `>=18.0.0` → `>=19.0.0`
+- `@sovio/tokens`: react `>=18.0.0` → `>=19.0.0`
+- `@sovio/ui`: already `"*"` — left as-is for maximum flexibility
+
+### Single-Version Verification (`pnpm -r why react`)
+All consumers resolve `react@19.0.0` — no drift. Confirmed zero entries of any other React major/minor in the resolver tree.
+
+**Caveat — `@types/react` double-resolution is present and expected:** the workspace now holds both `@types/react@19.0.14` (from mobile devDependency + SDK 53 cohort) and `@types/react@18.3.28` (pulled transitively via a stale `react-native@0.74.5` peer left over in a nested Expo dep chain). The runtime React is a single `19.0.0`, so there's no hook-call risk; however, the dual `@types/react` is the direct cause of the packages/ui typecheck errors below. Resolving the types dedupe is a Task 2.2 concern — most likely a one-line root override like `"@types/react": "19.0.14"`.
+
+### Typecheck Status (INTENTIONALLY RED — handed off to Task 2.2)
+- EXIT: 1
+- Error count: 3 errors, all in `packages/ui` (tokens + core pass cleanly; typecheck halts at ui via `&&`, so web + mobile are not yet exercised)
+- Error categories:
+  - **Dual `@types/react` ReactNode incompatibility (React 19 `bigint` in ReactNode) — 3 files**:
+    - `packages/ui/src/AppHeader.tsx` (line 16:7)
+    - `packages/ui/src/AppScreen.tsx` (line 10:7)
+    - `packages/ui/src/TabScreen.tsx` (line 16:9)
+  - All 3 are the same root cause: `React.ReactNode` from `@types/react@19` (includes `bigint`) is not assignable to the narrower `ReactNode` type from the nested `@types/react@18.3.28` that `react-native@0.74.5` drags in via a Metro runtime dep.
+  - No `defaultProps`, ref-type narrowing, or event-handler errors observed yet — those will surface once the `@types/react` dedupe is in place and typecheck can advance to web + mobile.
+
+Full output: `docs/superpowers/plans/baseline/phase2-typecheck.txt`
+
+### Tests, Lint, Bundle Deferred
+Tests are expected to fail while typecheck is red. Full test/lint/bundle verification belongs to Task 2.2 after call-site fixes land.
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)

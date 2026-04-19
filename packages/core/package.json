@@ -15,7 +15,7 @@
     "expo-location": ">=17.0.0",
     "expo-notifications": ">=0.28.0",
     "expo-secure-store": ">=13.0.0",
-    "react": ">=18.0.0",
+    "react": ">=19.0.0",
     "react-native": ">=0.73.0"
   },
   "devDependencies": {
