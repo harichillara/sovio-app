@@ -1,0 +1,14 @@
+EXIT_CODE=1
+
+> pnpm --filter @sovio/mobile exec tsc --noEmit
+
+tsconfig.json(5,27): error TS5103: Invalid value for '--ignoreDeprecations'.
+undefined
+D:\Download\AI\Sovio\apps\mobile:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 2: tsc --noEmit
+
+NOTE: This is the same pre-existing TS5103 error from the Phase 0 baseline (EXIT=1).
+No new errors introduced by the Expo SDK 52 bump. The TS5103 error exists because
+expo install --fix downgraded typescript from 6.0.3 to ^5.3.3 (installed 5.x), but
+the tsconfig still uses 'ignoreDeprecations' which is invalid in TS <5.0. This was
+already present in baseline and is tracked as a known pre-existing issue.
