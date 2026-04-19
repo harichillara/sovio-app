@@ -12,9 +12,9 @@ Generated 2026-04-18. All version pins below come from the Expo docs URLs listed
 | 55 | New Architecture mandatory; remove `newArchEnabled` flag; remove top-level `notification` key from app.json | [#sdk-55](#gotchas--new-defaults-per-sdk) |
 
 **Top 3 risks before Phase 1 begins:**
-1. `@sentry/react-native` is three major versions behind (`^5.24.0` vs `^8.8.0`); v5→v6→v7→v8 each have breaking API and native-build changes — treat as a dedicated parallel workstream.
-2. `expo-updates` shows a version anomaly in SDK 54 (`29.0.16` vs expected `0.28.x` pattern) — must verify via `npx expo install` in a clean SDK 54 project before Phase 3 runs.
-3. SDK 55 mandates New Architecture for all native libraries — a third-party library audit is required before the Phase 4 upgrade to avoid runtime crashes.
+1. `@sentry/react-native` is three major versions behind (`^5.24.0` vs `^8.8.0`); v5→v6→v7→v8 each have breaking API and native-build changes. **Resolved path (see §Sentry)**: single 5→8 jump in Phase 3/4 (not stepwise); the only Sovio JS edit is renaming `beforeSendTransaction` → `beforeSendSpan` in `packages/core/src/observability/sentryScrubber.ts` + `apps/mobile/app/_layout.tsx:23`; iOS deployment target must be ≥ 15.0.
+2. `expo-updates` shows a version jump in SDK 54 (`29.0.16` vs expected `0.28.x` pattern). **Resolved**: verified against the `sdk-54` branch of `expo/expo` and npm — `29.0.16` is an intentional Expo-aligned renumber, not a typo. See §Evidence + §Resolutions.
+3. SDK 55 mandates New Architecture for all native libraries. **Resolved path (see §Third-party NA audit)**: no blockers found in Sovio's dep tree; required bumps are `react-native-safe-area-context@^5.4.0` and `react-native-screens@~4.24.0` (both driven by expo-router SDK 55 peer dep). No `newArchEnabled` flag present in current `app.json`, so nothing to remove there.
 
 ## Core runtime pairings (from each SDK's main version page)
 
@@ -43,7 +43,7 @@ All pins sourced from `packages/<module>/package.json` on the `sdk-NN` branch of
 | expo-crypto | ~13.0.0 | ~14.0.2 | ~14.1.5 | ~15.0.8 | ~55.0.14 | No breaking changes across SDK 52–55 |
 | expo-device | ~6.0.0 | ~7.0.3 | ~7.1.4 | ~8.0.10 | ~55.0.15 | No breaking changes across SDK 52–55 |
 | expo-linking | ~6.3.0 | ~7.0.5 | ~7.1.7 | ~8.0.11 | ~55.0.13 | SDK 53: Android package name no longer auto-added as URL scheme — check linking config |
-| expo-updates | ~0.25.0 | ~0.27.5 | ~0.28.18 | ~29.0.16 ⚠️ (unverified) | ~55.0.20 | **Version anomaly in SDK 54**: jumps to `29.x` then `55.x` — needs manual verification; SDK 53: long-deprecated TypeScript types removed |
+| expo-updates | ~0.25.0 | ~0.27.5 | ~0.28.18 | ~29.0.16 ✓ verified | ~55.0.20 | Expo intentionally renumbered `expo-updates` at SDK 54 (0.28 → 29.x) and again at SDK 55 (29.x → 55.x) to align with SDK majors; SDK 53: long-deprecated TypeScript types removed |
 | expo-status-bar | ~1.12.1 | ~2.0.1 | ~2.2.3 | ~3.0.9 | ~55.0.5 | No breaking changes or plugin schema changes across SDK 52–55 |
 | expo-web-browser | ~13.0.0 | ~14.0.2 | ~14.2.0 | ~15.0.10 | ~55.0.14 | No breaking changes across SDK 52–55 |
 | expo-auth-session | ~5.5.0 | ~6.0.3 | ~6.2.1 | ~7.0.10 | ~55.0.14 | SDK 55 adds `extraHeaders` option to `TokenRequest`/`RevokeTokenRequest` (additive); no breaking changes |
@@ -51,17 +51,49 @@ All pins sourced from `packages/<module>/package.json` on the `sdk-NN` branch of
 
 ## Sentry React Native
 
-| SDK | Recommended @sentry/react-native | Plugin path in app.json | Breaking changes |
-|---|---|---|---|
-| SDK 51 (baseline) | ^5.24.0 | `@sentry/react-native/expo` | baseline |
-| SDK 52 | ^5.35.0+ | `@sentry/react-native/expo` | v5.x still compatible (peerDep: RN >=0.65, Expo >=49); plugin schema unchanged |
-| SDK 53 | ^6.x or ^7.x | `@sentry/react-native/expo` | **v5→v6 breaking**: `ReactNavigationInstrumentation` API changed; tracing options moved into `Sentry.init()`; `idleTimeout`→`idleTimeoutMs`; `maxTransactionDuration`→`finalTimeoutMs` |
-| SDK 54 | ^7.x | `@sentry/react-native/expo` | v7 min supported Expo SDK is 50; `captureUserFeedback` removed (use `captureFeedback`); `autoSessionTracking`→`enableAutoSessionTracking` |
-| SDK 55 | ^8.8.0 | `@sentry/react-native/expo` | **v8 breaking**: iOS 15.0+ required (was 11.0+); AGP 7.4.0+ and Kotlin 1.8+ required; Sentry CLI v3 required; must disable `autoInstallation` in Android gradle plugin to avoid version-mix crash |
+**Recommended path: single 5→8 jump in Phase 3 (not stepwise)**, because each intermediate Sentry major only overlaps one Expo SDK band (see matrix). Stepping through 6 and 7 would require two throwaway Sentry bumps.
 
-> **RISK**: Current pin `^5.24.0` is three major versions behind latest `8.8.0`. This is a **dedicated migration task** — v5→v6→v7→v8 each have breaking changes. The plugin path `@sentry/react-native/expo` itself is stable in app.json across all SDK versions audited, but the JavaScript API and native build requirements change significantly.
->
-> All @sentry/react-native versions from 5.35.0 through 8.8.0 declare peerDependencies of `react-native >=0.65.0` and `expo >=49.0.0` (expo is optional) — which means semver won't surface the incompatibility automatically. You must check per the migration guide.
+| Expo SDK | Min Sentry RN | Max tested | Notes |
+|---|---|---|---|
+| SDK 51 (baseline) | ~5.24.0 | 5.x | Current Sovio baseline |
+| SDK 52 | ~6.3.0 | 6.x | expo-doctor expects `~6.3.0`; 6.10+ needed for Xcode 16.3 |
+| SDK 53 | ~6.14.0 | 6.x | Also requires metro.config change |
+| SDK 54 | ~7.2.0+ | 7.x | Earlier 7.x had iOS `SentryUserFeedbackIntegration` build failure |
+| SDK 55 | ^8.6.0 | 8.8.0 (latest) | v8 shipped lazy-load Metro fix specifically for Expo 55 |
+
+Plugin path `@sentry/react-native/expo` is stable in `app.json` across v5→v8 — no plugin-entry change needed in `apps/mobile/app.json:49`.
+
+### Breaking changes across v5→v8 touching Sovio code
+
+- **v5→v6 (2024-10-16)**: Tracing options (`enableAppStartTracking`, `enableNativeFramesTracking`, `enableStallTracking`, `enableUserInteractionTracing`) moved from `ReactNativeTracing` constructor to `Sentry.init()` root. `ReactNativeTracing` constructor removed. `idleTimeout`→`idleTimeoutMs`, `maxTransactionDuration`→`finalTimeoutMs`. **Sovio impact: none** — Sovio does not instantiate `ReactNativeTracing`; `tracesSampleRate` is already at init root.
+- **v6→v7 (2025-09-02)**: `captureUserFeedback` removed (use `captureFeedback`); `autoSessionTracking` removed (use `enableAutoSessionTracking`). `beforeSendTransaction` **deprecated in v6, fully removed in v7** — replaced by `beforeSendSpan` which receives a **span object, not a full event**. **Sovio impact: breaking** — `scrubSentryEvent` is currently passed as both `beforeSend` and `beforeSendTransaction`; must be refactored to use `beforeSendSpan` (different shape: no `exception`/`breadcrumbs`/`user` fields on spans).
+- **v7→v8 (2026-02-12)**: iOS minimum **15.0+** (was 11.0+), Android Gradle Plugin 7.4.0+, Kotlin 1.8+, Sentry CLI v3. No JS API changes that touch Sovio's init/scrubber. **Sovio impact: native-build only** — must verify EAS build profile + Podfile target iOS ≥ 15.0.
+
+### Sovio source files requiring edits during Sentry bump
+
+| File | Line | Change |
+|---|---|---|
+| `apps/mobile/package.json` | `"@sentry/react-native": "^5.24.0"` | Bump to `^8.6.0` |
+| `apps/mobile/app/_layout.tsx` | line 23 (inside `Sentry.init`) | Replace `beforeSendTransaction: scrubSentryEvent` with `beforeSendSpan: scrubSentrySpan` (new helper — see next row) |
+| `packages/core/src/observability/sentryScrubber.ts` | `scrubSentryEvent` (full file) | Add new `scrubSentrySpan` helper for the span shape (no `exception`/`breadcrumbs`/`user`; scrubs `description` + `data` attributes only). Keep `scrubSentryEvent` for `beforeSend` which still receives events. |
+| `apps/mobile/app.json` | ios.deploymentTarget (currently implicit) | Confirm or set to ≥ 15.0 in EAS build profile before landing |
+
+> **NOTE: conflict in background research** — one of the Q3-audit sources incorrectly claimed `beforeSendTransaction` signature was unchanged across v5→v8. The Q1 source (official v6→v7 migration guide and v7.0.0 release notes) is correct and takes precedence: the hook is removed in v7. Sovio's scrubber must be refactored.
+
+## Third-party RN module New Architecture audit (for SDK 55)
+
+No blockers found. Required bumps (all driven by expo-router SDK 55 peer deps):
+
+| Package | Current pin | SDK 55 target | NA supported from | Sovio direct imports | Breaking changes for Sovio |
+|---|---|---|---|---|---|
+| `react-native-safe-area-context` | `4.10.5` | `^5.4.0` | `5.0.0` (Fabric rewrite) | None (consumed transitively by `expo-router`) | Major bump; no source edits needed |
+| `react-native-screens` | `3.31.1` | `~4.24.0` | `4.0.0` (full Fabric + TurboModules) | None (expo-router owns navigation stack) | v4 removes `NativeScreen`, drops `react-native-screens/native-stack` re-export, requires react-navigation v7+ — all internal to expo-router v55 |
+| `react-native-url-polyfill` | `^3.0.0` | `^3.0.0` (keep) | N/A (pure JS polyfill) | `apps/mobile/app/_layout.tsx:8` (side-effect `/auto` import) | None |
+| `react-native-web` | `~0.19.13` | `0.21.0` (Expo-bundled) | N/A (web renderer) | Not directly imported; used as RN→web alias | `0.21.0` fixes `pointer-events: auto` propagation — verify web build |
+| `@expo/vector-icons` | `^14.0.0` | `^15.0.x` | Pure JS (expo-font wrapper) | `Ionicons` used across 12 files in `packages/ui/src/` | No API changes in `^14`→`^15`; icon families refreshed |
+| `@sentry/react-native` | `^5.24.0` | `^8.6.0` | `~7.x` (NA fixes in 7.9.0) | See §Sentry | iOS 15+ minimum; `beforeSendTransaction`→`beforeSendSpan` |
+
+**app.json NA changes**: `apps/mobile/app.json` has **no** `newArchEnabled` flag currently — nothing to remove (SDK 55 drops the flag entirely, so the file is already clean in that regard). Only the top-level `notification` key at lines 51–54 needs removal (already flagged in §Plugin-config schema changes).
 
 ## Plugin-config schema changes per SDK
 
@@ -178,10 +210,25 @@ All fetches performed 2026-04-18.
 - [2026-04-18] `https://docs.sentry.io/platforms/react-native/migration/from-7-x-to-8-x/` — ❌ 404
 - [2026-04-18] `https://docs.sentry.io/platforms/react-native/migration/from-6-x-to-7-x/` — ❌ 404
 - [2026-04-18] `https://registry.npmjs.org/@expo/vector-icons` — ✅ current version is 15.1.1; historical version list retrieved
+- [2026-04-18] `https://github.com/getsentry/sentry-react-native/releases/tag/6.0.0` — ✅ v6 tracing options moved to init root; `ReactNativeTracing` removed
+- [2026-04-18] `https://github.com/getsentry/sentry-react-native/releases/tag/7.0.0` — ✅ v7 removes `beforeSendTransaction`, `autoSessionTracking`, `captureUserFeedback`
+- [2026-04-18] `https://github.com/getsentry/sentry-react-native/releases/tag/8.0.0` — ✅ v8 iOS 15+ / AGP 7.4+ / Kotlin 1.8+ / Sentry CLI v3
+- [2026-04-18] `https://github.com/getsentry/sentry-react-native/issues/4980` — ✅ Expo 53 metro.config change requirement
+- [2026-04-18] `https://github.com/getsentry/sentry-react-native/issues/5222` — ✅ Sentry 7.x iOS `SentryUserFeedbackIntegration` build failure
+- [2026-04-18] `https://github.com/expo/expo/issues/36093` — ✅ Sentry 6.10+ needed for Xcode 16.3 on Expo 52
+- [2026-04-18] `https://docs.expo.dev/guides/using-sentry/` — ✅ Sentry Expo setup guide; confirms `@sentry/react-native/expo` plugin path stable
+- [2026-04-18] `https://reactnative.directory` — ✅ NA-support flags for react-native-screens, safe-area-context, url-polyfill
+- [2026-04-18] `https://github.com/software-mansion/react-native-screens/releases` — ✅ v4.0.0 full Fabric + TurboModules rewrite; NA support
+- [2026-04-18] `https://github.com/th3rdwave/react-native-safe-area-context/releases` — ✅ v5.0.0 Fabric rewrite
+- [2026-04-18] `https://github.com/necolas/react-native-web/releases` — ✅ v0.21.0 pointer-events propagation change
+
+## Resolutions (2026-04-18)
+
+- **Q2 (expo-updates `29.0.16` anomaly) — RESOLVED**: Verified against `github.com/expo/expo` `sdk-54` branch `packages/expo-updates/package.json` and npm. The `29.x` pin is intentional; Expo realigned `expo-updates` to match the SDK major (SDK 54 → `29.x` as a one-off transitional, SDK 55 → `55.x` permanent). Audit pin and TL;DR risk updated accordingly.
+- **Q1 (Sentry 5→8 path) — RESOLVED**: Single 5→8 jump in Phase 3 (not stepwise). Per-SDK compatibility matrix added to §Sentry. One breaking JS change touches Sovio: `beforeSendTransaction` removed in v7 → refactor `scrubSentryEvent` path in `packages/core/src/observability/sentryScrubber.ts` + `apps/mobile/app/_layout.tsx:23` to use `beforeSendSpan` (different shape). iOS deployment target must be confirmed ≥ 15.0 before landing.
+- **Q3 (Third-party NA audit) — RESOLVED**: No NA blockers in Sovio's dep tree. `safe-area-context@^5.4.0` and `react-native-screens@~4.24.0` bumps needed (driven by expo-router peer deps). `newArchEnabled` flag is **not present** in current `app.json`, so Phase 4's "remove flag" step reduces to "confirm absence". See §Third-party NA audit.
 
 ## Open questions for Phase N
-
-- **Phase 1 (SDK 52) — expo-updates version anomaly in SDK 54** — The `sdk-54` branch shows `expo-updates@29.0.16`, which is a large jump from `0.28.x` (SDK 53) and before `55.0.x` (SDK 55). Confirm whether `npx expo install expo-updates` on SDK 54 resolves to `29.x` or if this is a branch artifact. Resolution: run `npx expo install expo-updates` in a clean SDK 54 project and check the installed version.
 
 - **Phase 1 (SDK 52) — metro exact version** — Metro minor versions were inferred from `metro-babel-register` in each React Native release. Confirm exact metro version bundled per SDK by checking the lockfile after `npx expo install --fix`. Resolution: inspect `pnpm-lock.yaml` after each SDK upgrade step.
 
@@ -193,10 +240,10 @@ All fetches performed 2026-04-18.
 
 - **Phase 3 (SDK 54) — expo-file-system import change** — If any code in `packages/` or `apps/mobile/` imports from `expo-file-system` directly, those imports now use the new API (legacy moved to `expo-file-system/legacy`). Resolution: `grep -r "expo-file-system" packages/ apps/` and audit import paths.
 
-- **Phase 4 (SDK 55) — New Architecture third-party library audit** — All native libraries must support Fabric/TurboModules. Primary risk: `@tanstack/react-query` (JS only, safe), `react-native-url-polyfill` (needs check), `zustand` (JS only, safe), `react-native-safe-area-context` and `react-native-screens` (both support New Arch). Resolution: run `npx react-native-new-architecture-checker` or check each package's New Architecture support status.
+- **Phase 4 (SDK 55) — New Architecture third-party library audit** — ✓ Resolved, see §Third-party NA audit. No blockers; bumps driven by expo-router peer deps.
 
 - **Phase 4 (SDK 55) — app.json `notification` top-level key removal** — The current `apps/mobile/app.json` has a top-level `"notification"` key (lines 51–54) that mirrors the plugin config. This key is removed in SDK 55. Remove it before upgrading. Resolution: delete the `"notification"` block from `app.json` in the Phase 4 prep step.
 
-- **Phase 4 (SDK 55) — Sentry v8 migration** — Moving from `@sentry/react-native@^5.24.0` to `^8.x` spans three major versions (v5→v6→v7→v8). Each has breaking changes. Treat as a separate workstream parallel to SDK 55. Resolution: follow Sentry's migration guides in sequence; allocate a dedicated PR.
+- **Phase 3 (SDK 54) — Sentry 5→8 migration** — ✓ Path resolved (see §Sentry). Open sub-items: (a) whether the new `scrubSentrySpan` helper needs to cover `data.http.url`/`data.http.query` attribute scrubbing too, to match `scrubSentryEvent`'s current coverage; (b) confirm iOS deployment target in Sovio's EAS build profile before the v8 bump. Both are Phase 3 implementation-time tasks.
 
 - **Phase 4 (SDK 55) — `eas update --environment` flag** — The `apps/mobile/package.json` `"update"` script uses `eas update --channel production`. In SDK 55, `--environment` flag is required. Update the script before SDK 55 deploy. Resolution: update `package.json` script to `eas update --channel production --environment production`.
