@@ -1,0 +1,722 @@
+# Instincts generated from https://github.com/harichillara/sovio-app
+# Generated: 2026-04-18T20:41:48.509Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: sovio-app-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: fix, feat, chore, docs, refactor
+
+## Evidence
+
+- 37 commits analyzed
+- Detected conventional commit pattern
+- Examples: fix: architecture audit — IDOR fixes, dependency alignment, deduplication, refactor: code simplification pass across core services and hooks
+
+---
+id: sovio-app-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Commit Length
+
+## Action
+
+Write moderate-length commit messages (~67 characters)
+
+## Evidence
+
+- Average commit message length: 67 chars
+- Based on 37 commits
+
+---
+id: sovio-app-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: sovio-app-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: sovio-app-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Export Style
+
+## Action
+
+Prefer default exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: default
+
+---
+id: sovio-app-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: 
+
+---
+id: sovio-app-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: sovio-app-test-framework
+trigger: "when writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Test Framework
+
+## Action
+
+Use vitest as the test framework
+
+## Evidence
+
+- Test framework detected: vitest
+- File pattern: *.test.ts
+
+---
+id: sovio-app-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Test Naming
+
+## Action
+
+Name test files using the pattern: *.test.ts
+
+## Evidence
+
+- File pattern: *.test.ts
+- Consistent across test files
+
+---
+id: sovio-app-test-mocking
+trigger: "when mocking dependencies in tests"
+confidence: 0.75
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Test Mocking
+
+## Action
+
+Use vi.mock for mocking
+
+## Evidence
+
+- Mocking pattern detected: vi.mock
+- Consistent across test files
+
+---
+id: sovio-app-test-types
+trigger: "when planning tests for a feature"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Test Types
+
+## Action
+
+Write unit, integration tests to match project standards
+
+## Evidence
+
+- Test types detected: unit, integration
+- Coverage config: yes
+
+---
+id: sovio-app-workflow-database-migration
+trigger: "when modifying the database schema or adding tables"
+confidence: 0.8
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Database Migration
+
+## Action
+
+Follow the database-migration workflow:
+1. Create migration file
+2. Update schema definitions
+3. Generate/update types
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~6x per month
+- Files: migrations/*, **/schema.*
+
+---
+id: sovio-app-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~15x per month
+- Files: apps/mobile/app/(auth)/*, apps/mobile/app/(modals)/*, apps/mobile/app/(tabs)/*
+
+---
+id: sovio-app-workflow-refactoring
+trigger: "when refactoring code"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Refactoring
+
+## Action
+
+Follow the refactoring workflow:
+1. Ensure tests pass before refactor
+2. Refactor code structure
+3. Verify tests still pass
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/**/*
+
+---
+id: sovio-app-workflow-database-table-addition-and-rls-hardening
+trigger: "when doing database table addition and rls hardening"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Database Table Addition And Rls Hardening
+
+## Action
+
+Follow the database-table-addition-and-rls-hardening workflow:
+1. Create SQL migration(s) in supabase/migrations/ for new table and/or RLS policies.
+2. Add/modify RLS policies with canonical naming and deny-by-default posture.
+3. Seed table with initial data if needed.
+4. Update supabase/config.toml or related config if new triggers/functions are needed.
+5. Update generated types (e.g., database.types.ts) if client access is required.
+6. Add or update integration tests in supabase/tests/ or tests/integration/ to verify RLS boundaries.
+7. If client access is needed, add service and hook in packages/core/src/services/ and packages/core/src/hooks/.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: supabase/migrations/*.sql, supabase/config.toml, supabase/tests/*.test.ts
+
+---
+id: sovio-app-workflow-edge-function-hardening-and-shared-module-extraction
+trigger: "when doing edge function hardening and shared module extraction"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Edge Function Hardening And Shared Module Extraction
+
+## Action
+
+Follow the edge-function-hardening-and-shared-module-extraction workflow:
+1. Extract common logic to supabase/functions/_shared/ (e.g., logger, validate, prompt-safety, rate-limit).
+2. Update edge function index.ts files to use shared modules.
+3. Add or update input validation (often with zod) and error handling.
+4. Add or update Deno tests for both shared modules and function handlers.
+5. Wire up observability (e.g., Sentry scrubber) if not already present.
+6. Update deno.json or related config to include new tests in CI.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: supabase/functions/_shared/*.ts, supabase/functions/*/index.ts, supabase/functions/*/*.test.ts
+
+---
+id: sovio-app-workflow-feature-flag-or-config-table-with-client-hook
+trigger: "when doing feature flag or config table with client hook"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Feature Flag Or Config Table With Client Hook
+
+## Action
+
+Follow the feature-flag-or-config-table-with-client-hook workflow:
+1. Create SQL migration for new table (e.g., feature_flags, app_version_flags) in supabase/migrations/.
+2. Add RLS policies (authenticated SELECT, service_role for writes).
+3. Add a resolver function in SQL if needed (e.g., is_flag_enabled).
+4. Seed table with initial/default values.
+5. Implement service in packages/core/src/services/ to fetch/resolve flag(s).
+6. Implement hook in packages/core/src/hooks/ for React usage.
+7. Add query key and barrel export in packages/core/src/hooks/queryKeys.ts and index.ts.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: supabase/migrations/*.sql, packages/core/src/services/*.ts, packages/core/src/hooks/*.ts
+
+---
+id: sovio-app-workflow-security-hardening-and-code-audit-fix-pass
+trigger: "when doing security hardening and code audit fix pass"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Security Hardening And Code Audit Fix Pass
+
+## Action
+
+Follow the security-hardening-and-code-audit-fix-pass workflow:
+1. Identify and fix security bugs (e.g., IDOR, auth bypass, JWT validation).
+2. Align types and unions for stricter type safety.
+3. Fix error handling (surface errors, avoid silent failures).
+4. Deduplicate code (extract shared components, utilities).
+5. Update affected services, hooks, and UI components.
+6. Update .env.example and package.json dependencies if needed.
+7. Document audit plan or review log in docs/.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: packages/core/src/services/*.ts, packages/core/src/hooks/*.ts, packages/core/src/supabase/*.ts
+
+---
+id: sovio-app-workflow-ci-pipeline-and-test-harness-setup-or-update
+trigger: "when doing ci pipeline and test harness setup or update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Ci Pipeline And Test Harness Setup Or Update
+
+## Action
+
+Follow the ci-pipeline-and-test-harness-setup-or-update workflow:
+1. Add or update CI workflow files (e.g., .github/workflows/ci.yml).
+2. Add or update workspace config files (e.g., pnpm-workspace.yaml, vitest configs).
+3. Add or update scripts for test harnesses (integration, policy snapshot, QA runners).
+4. Add or update .env.example and related config for new CI/test requirements.
+5. Document new workflows or runbooks in docs/.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: .github/workflows/*.yml, pnpm-workspace.yaml, vitest.config.ts
+
+---
+id: sovio-app-workflow-sentry-observability-scrubber-wiring
+trigger: "when doing sentry observability scrubber wiring"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/harichillara/sovio-app
+---
+
+# Sovio App Workflow Sentry Observability Scrubber Wiring
+
+## Action
+
+Follow the sentry-observability-scrubber-wiring workflow:
+1. Implement or update a Sentry scrubber utility (e.g., scrubSentryEvent).
+2. Add or update tests for the scrubber.
+3. Wire the scrubber into beforeSend on all Sentry.init sites (web, mobile, edge functions).
+4. Add or update Deno-compatible port for edge functions.
+5. Verify by running tests and typechecks.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: packages/core/src/observability/sentryScrubber.ts, packages/core/src/observability/sentryScrubber.test.ts, apps/web/sentry.*.config.ts
+
+---
+id: sovio-app-camelcase-naming
+trigger: "When creating new files, functions, or variables in TypeScript"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Camelcase Naming
+
+## Action
+
+Use camelCase for files and functions, PascalCase for classes, and SCREAMING_SNAKE_CASE for constants
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions
+- Examples in packages/core/src/hooks/queryKeys.ts
+
+---
+id: sovio-app-relative-imports
+trigger: "When importing modules within the codebase"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Relative Imports
+
+## Action
+
+Use relative import paths instead of absolute or alias-based imports
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+- Pattern in packages/core/src/hooks/useBilling.ts
+
+---
+id: sovio-app-default-exports
+trigger: "When exporting modules or components"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Default Exports
+
+## Action
+
+Use default exports for modules and components
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+- Pattern in packages/core/src/services/*.ts
+
+---
+id: sovio-app-vitest-test-pattern
+trigger: "When writing tests for TypeScript code"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Vitest Test Pattern
+
+## Action
+
+Use Vitest with *.test.ts file naming and vi.mock for mocking
+
+## Evidence
+
+- Pattern in testing.framework and testing.filePattern
+- Pattern in supabase/tests/*.test.ts
+
+---
+id: sovio-app-test-coverage-config
+trigger: "When configuring or updating test suites"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Test Coverage Config
+
+## Action
+
+Enable and maintain code coverage configuration in Vitest
+
+## Evidence
+
+- Pattern in testing.coverageConfig
+- Presence of vitest.config.ts in multiple packages
+
+---
+id: sovio-app-unit-integration-tests
+trigger: "When adding new features or refactoring code"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Unit Integration Tests
+
+## Action
+
+Add both unit and integration tests as appropriate
+
+## Evidence
+
+- Pattern in testing.testTypes
+- Examples in tests/integration/src/*.test.ts
+
+---
+id: sovio-app-conventional-commits
+trigger: "When writing git commit messages"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Conventional Commits
+
+## Action
+
+Use conventional commit prefixes (fix, feat, chore, docs, refactor) and keep messages concise (~67 chars avg)
+
+## Evidence
+
+- Pattern in commits.prefixes and averageLength
+- Examples: 'fix: architecture audit — IDOR fixes, dependency alignment, deduplication'
+
+---
+id: sovio-app-database-table-rls-workflow
+trigger: "When adding a new database table or hardening RLS policies"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Database Table Rls Workflow
+
+## Action
+
+Create SQL migration, add/modify RLS, seed data if needed, update config, regenerate types, add integration tests, and wire up client access if required
+
+## Evidence
+
+- Workflow: database-table-addition-and-rls-hardening
+- Commits and file patterns in supabase/migrations/*.sql, supabase/config.toml, packages/core/src/services/*.ts
+
+---
+id: sovio-app-edge-function-hardening
+trigger: "When refactoring or improving Supabase Edge Functions"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Edge Function Hardening
+
+## Action
+
+Extract shared modules, update function handlers, add input validation and observability, and write Deno tests
+
+## Evidence
+
+- Workflow: edge-function-hardening-and-shared-module-extraction
+- Pattern in supabase/functions/_shared/*.ts, supabase/functions/*/index.ts
+
+---
+id: sovio-app-feature-flag-config-table
+trigger: "When gating features or runtime config behind a flag or table-driven setting"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Feature Flag Config Table
+
+## Action
+
+Add feature/config table with RLS, resolver function, service, React hook, and query key export
+
+## Evidence
+
+- Workflow: feature-flag-or-config-table-with-client-hook
+- Pattern in supabase/migrations/*.sql, packages/core/src/services/*.ts, packages/core/src/hooks/*.ts
+
+---
+id: sovio-app-security-audit-fix-pass
+trigger: "When a security review or code audit identifies issues across the codebase"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Security Audit Fix Pass
+
+## Action
+
+Fix security bugs, align types, improve error handling, deduplicate code, update affected modules, and document changes
+
+## Evidence
+
+- Workflow: security-hardening-and-code-audit-fix-pass
+- Commits: 'fix: architecture audit — IDOR fixes, dependency alignment, deduplication'
+
+---
+id: sovio-app-ci-pipeline-update
+trigger: "When setting up or updating CI pipelines, workspace configs, or test harnesses"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Ci Pipeline Update
+
+## Action
+
+Update CI workflow files, workspace configs, test scripts, .env.example, and document in runbooks
+
+## Evidence
+
+- Workflow: ci-pipeline-and-test-harness-setup-or-update
+- Pattern in .github/workflows/*.yml, vitest.config.ts, docs/runbooks/*.md
+
+---
+id: sovio-app-sentry-scrubber-wiring
+trigger: "When ensuring no secrets or PII leak into Sentry error reports"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: harichillara/sovio-app
+---
+
+# Sovio App Sentry Scrubber Wiring
+
+## Action
+
+Implement or update Sentry scrubber utility, add tests, and wire into all Sentry.init sites (web, mobile, edge)
+
+## Evidence
+
+- Workflow: sentry-observability-scrubber-wiring
+- Pattern in packages/core/src/observability/sentryScrubber.ts, apps/web/sentry.*.config.ts
+
