@@ -51,7 +51,7 @@
     "@types/node": "^25.6.0",
     "@types/react": "19.2.14",
     "cross-env": "^10.1.0",
-    "eas-cli": "^10.2.4",
+    "eas-cli": "^18.8.1",
     "expo-atlas": "^0.4.3",
     "typescript": "^5.9.3"
   }

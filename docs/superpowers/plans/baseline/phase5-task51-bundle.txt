@@ -1,0 +1,58 @@
+=== Phase 5 Task 5.1 iOS Bundle Export Gate ===
+HEAD=07c12ba37b69ad3acf25e9192898ef001161425f
+TIMESTAMP=2026-04-23T22:03:00Z
+Branch=release/expo-55-migration
+---
+env: load .env
+env: export EXPO_PUBLIC_GEMINI_API_KEY EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_SUPABASE_URL
+[33m› [1m[@sentry/react-native/expo][22m Missing config for [1morganization, project[22m. Environment variables will be used as a fallback during the build. https://docs.sentry.io/platforms/react-native/manual-setup/[0m
+Expo Autolinking module resolution enabled
+Starting Metro Bundler
+
+iOS apps\mobile\index.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+iOS apps\mobile\index.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.5% (1835/1858)
+iOS apps\mobile\index.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (1858/1858)
+iOS Bundled 12052ms apps\mobile\index.js (1858 modules)
+
+› Assets (42):
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\AntDesign.ttf (130KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Entypo.ttf (66KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\EvilIcons.ttf (13KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Feather.ttf (56KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome.ttf (166KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Brands.ttf (134KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Regular.ttf (34KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Solid.ttf (203KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Brands.ttf (209KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Regular.ttf (68KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Solid.ttf (424KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Fontisto.ttf (314KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Foundation.ttf (57KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Ionicons.ttf (390KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\MaterialCommunityIcons.ttf (1.3MB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\MaterialIcons.ttf (357KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Octicons.ttf (69KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\SimpleLineIcons.ttf (54KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Zocial.ttf (26KB)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\back-icon-mask.png (653B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\back-icon.png (4 variations | 566B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\clear-icon.png (4 variations | 425B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\close-icon.png (4 variations | 235B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\search-icon.png (3 variations | 582B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\arrow_down.png (9.5KB)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\error.png (469B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\file.png (138B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\forward.png (188B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\pkg.png (364B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\sitemap.png (465B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\unmatched.png (4.8KB)
+
+› ios bundles (1):
+_expo/static/js/ios/index-acf3476f6bb6de6fdc2cb3c7cf16d55e.hbc (5.7MB)
+
+› Files (1):
+metadata.json (2.8KB)
+
+Exported: dist
+---
+EXIT=0

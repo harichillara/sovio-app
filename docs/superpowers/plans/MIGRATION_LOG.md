@@ -585,6 +585,77 @@ Artifacts: `docs/superpowers/plans/baseline/phase4-task41-{typecheck,test,lint,w
 
 - **INFO (dismissed — reviewer mistake): `Array.isArray(e.breadcrumbs)` guard in `packages/core/src/observability/sentryScrubber.ts:150`.** Reviewer claimed the guard always fails under v8 because `breadcrumbs` is `{ values?: Breadcrumb[] }`. Verified against `node_modules/@sentry/core/build/types/types-hoist/event.d.ts:45`: `breadcrumbs?: Breadcrumb[]` — a bare array, exactly as the scrubber assumes. The `{ values }` envelope is a transport/Scope shape, not the `Event.breadcrumbs` shape. Scrubber is correct. No action.
 
+## Phase 5 Task 5.1 — Companion ecosystem audit & bumps
+
+**Parent commit:** `07c12ba` (Phase 4 pre-flight receipt). Ran against `release/expo-55-migration`.
+
+### Step 1 — `pnpm outdated` audit (2026-04-23)
+
+Raw outputs captured at `docs/superpowers/plans/baseline/phase5-task51-outdated-{mobile,web}.txt`.
+
+**Mobile workspace (`@sovio/mobile`):**
+
+| Package | Current | Latest | Kind | Decision | Reason |
+|---|---|---|---|---|---|
+| `react` | 19.2.0 | 19.2.5 | patch | **Defer** | Pinned by root override (`19.2.0`); in lockstep with Expo SDK 55 + React 19 resolution. Not part of Task 5.1. |
+| `react-dom` | 19.2.0 | 19.2.5 | patch | **Defer** | Same override pin; follow-up ticket alongside React patch. |
+| `@tanstack/react-query` | 5.99.1 | 5.100.1 | minor | **Defer** | Out of migration scope. Untested against SDK 55 QC matrix; owner-scheduled post-migration. |
+| `react-native-safe-area-context` | 5.6.2 | 5.7.0 | minor | **Defer** | Version aligned to Expo SDK 55's expected range (`5.6.x`). Do not bump independently; will ride the next `expo install --fix` cycle. |
+| `react-native-screens` | 4.23.0 | 4.24.0 | minor | **Defer** | Same rationale as safe-area-context — SDK-pinned. |
+| `eas-cli` | 10.2.4 | 18.8.1 | **MAJOR** | **Include** (Task 5.1 Step 2 mandates) | Dev tool only, does not ship in bundle or affect runtime. Step 2 explicitly directs this bump. |
+| `typescript` | 5.9.3 | 6.0.3 | **MAJOR** | **Defer** | TypeScript 6 is a breaking major. Needs its own migration pass (likely separate branch). Out of SDK 55 migration scope. |
+| `react-native` | 0.83.6 | 0.85.2 | minor | **Defer** | Root override pins `0.83.6` to match Expo SDK 55. Independent bump would break Expo pin contract. |
+
+**Web workspace (`@sovio/web`):**
+
+| Package | Current | Latest | Kind | Decision | Reason |
+|---|---|---|---|---|---|
+| `react` | 19.2.0 | 19.2.5 | patch | **Defer** | Root override pin; see mobile rationale. |
+| `react-dom` | 19.2.0 | 19.2.5 | patch | **Defer** | Same. |
+| `@sentry/nextjs` | 10.49.0 | 10.50.0 | patch | **Defer** | Out of scope; web observability not in SDK 55 migration mandate. |
+| `@supabase/supabase-js` | 2.103.3 | 2.104.1 | patch | **Defer** | Out of scope. |
+| `@next/bundle-analyzer` | 15.5.15 | 16.2.4 | **MAJOR** | **Defer** | Next.js 16 is a breaking major. Phase 6 (Web cleanup) or follow-up release. |
+| `next` | 15.5.15 | 16.2.4 | **MAJOR** | **Defer** | Same — Next.js 16 is out of SDK 55 migration scope. |
+
+**Sentry note:** `@sentry/react-native` does **not** appear as outdated — root override at `8.9.1` holds it there per commit `1b74fc5` rationale (Expo SDK 55 compat; avoid v10 jump during migration). Confirmed the override is working as designed; no action.
+
+**Totals:**
+- Major bumps deferred: **3** (typescript 6, next 16, @next/bundle-analyzer 16).
+- Majors included: **1** (eas-cli — explicit Step 2 mandate).
+- Minor/patch deferred: **7** (react, react-dom ×2, @tanstack/react-query, react-native-safe-area-context, react-native-screens, react-native, @sentry/nextjs, @supabase/supabase-js).
+- Minor/patch included: **0** (no passive bumps — only the two explicit Step 2/Step 3 targets).
+
+### Step 2 — `eas-cli` bump
+
+- Before: `^10.2.4` (major 10)
+- After: `^18.8.1` (major 18)
+- Delta: +8 majors. Dev-only tool; zero runtime impact on mobile bundle. eas-cli internally bundles its own TypeScript 6 + modern tooling, isolated under `.pnpm/` — does not affect workspace-declared TypeScript 5.9.3.
+
+### Step 3 — `expo-atlas` bump
+
+- Before: `^0.4.3`
+- After: `^0.4.3` (no-op — already at latest)
+- `npm view expo-atlas@latest` confirms version `0.4.3`; peer is `expo: '*'` (no SDK constraint to verify). No change to `package.json` version spec; `pnpm add` ran successfully with no lockfile churn for this package.
+
+### Step 4 — 5-gate verification (all at post-bump working tree)
+
+| Gate | Artifact | EXIT |
+|---|---|---|
+| Typecheck | `phase5-task51-typecheck.txt` | 0 |
+| Lint | `phase5-task51-lint.txt` | 0 (4 pre-existing unused-disable warnings — not new) |
+| Test | `phase5-task51-test.txt` | 0 (9 files / 95 tests passed) |
+| Web build | `phase5-task51-webbuild.txt` | 0 (Next.js build succeeded; 14 routes prerendered/dynamic) |
+| iOS bundle export | `phase5-task51-bundle.txt` | 0 (5.7MB HBC bundle emitted) |
+
+All five gates green at `HEAD=07c12ba` + working-tree deltas (eas-cli bump only).
+
+### Scope leaks / observations (not fixed in this commit)
+
+- **pnpm install warnings:** `eas-build-hook.js.EXE` bin-link warnings from `@sentry/react-native@8.9.1` persist (benign Windows pnpm quirk — not a new regression). Documented here for transparency; no action needed.
+- **eas-cli 10 → 18 is 8 majors of drift:** Team should schedule a CI job to keep eas-cli within 1–2 majors going forward so future SDK migrations don't absorb this kind of tooling-debt jump in-band.
+- **Next.js 16 + TypeScript 6 are both waiting in the wings:** Separate tracked follow-ups, not scoped here.
+- **`@tanstack/react-query` 5.99 → 5.100:** Trivial minor, no known breaking changes; owner can pick up in next sprint.
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
