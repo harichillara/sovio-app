@@ -223,11 +223,95 @@ Task 2.1 pivoted from pnpm's `"$react"` sigil (which requires a root-level dep) 
 ### Scope leak note
 One scope leak crept in during Task 2.2: the `ignoreDeprecations: "6.0" → "5.0"` fix was technically pre-existing baseline noise, not Task 2.1 regression. It was adjacent to the `useSegments` widening and within the same tsconfig read-pass, so the agent fixed it inline. Called out here so reviewers don't flag it as over-scoping — net effect is better than baseline.
 
+## Phase 3 Task 3.1 — Coordinated Expo SDK 54 + Sentry RN v6 → v8 single-jump bump
+
+**Date**: 2026-04-23
+**Pre-bump SHA**: 048c3f7bbb499db159b5c70661b64fa5e6cb1307
+**Executed by**: Claude Opus 4.7 (automated)
+
+### Procedure notes
+`npx expo install --fix` on the current tree initially reported "Dependencies are up to date" because the Expo package was still on `~53.0.27` — the CLI scopes its cohort checks against the *installed* SDK version, not the latest available. Bumped `expo` to `~54.0.33` in `apps/mobile/package.json` first, ran `pnpm install` to land that, then re-ran `expo install --fix` which correctly detected 23 out-of-cohort packages and installed the SDK 54 set.
+
+Expo's `--fix` pulled `@sentry/react-native` to `~7.2.0` (its cohort-expected version). Manually bumped to `^8.9.1` per the plan's single-jump directive (skipping v6-final and v7), then re-ran `pnpm install` to let the v8 resolution settle. Sentry v8 is the latest stable at time of bump.
+
+### Cohort Pins Resolved by `expo install --fix` (SDK 54)
+
+| Package | Before (SDK 53) | After (SDK 54) |
+|---|---|---|
+| expo | ~53.0.27 | ~54.0.33 |
+| @expo/vector-icons | ^14.1.0 | ^15.1.1 |
+| @sentry/react-native | ^6.14.0 | **^8.9.1** (manual — plan directive) |
+| expo-apple-authentication | ~7.2.4 | ~8.0.8 |
+| expo-auth-session | ~6.2.1 | ~7.0.10 |
+| expo-constants | ~17.1.8 | ~18.0.13 |
+| expo-crypto | ~14.1.5 | ~15.0.8 |
+| expo-device | ~7.1.4 | ~8.0.10 |
+| expo-linking | ~7.1.7 | ~8.0.11 |
+| expo-location | ~18.1.6 | 19.0.8 (literal — override pin) |
+| expo-notifications | ~0.31.5 | ~0.32.16 |
+| expo-router | ~5.1.11 | ~6.0.23 |
+| expo-secure-store | ~14.2.4 | ~15.0.8 |
+| expo-status-bar | ~2.2.3 | ~3.0.9 |
+| expo-updates | ~0.28.18 | ~29.0.16 |
+| expo-web-browser | ~14.2.0 | ~15.0.10 |
+| react | 19.0.0 | 19.1.0 |
+| react-dom | 19.0.0 | 19.1.0 |
+| react-native | 0.79.6 | 0.81.5 |
+| react-native-safe-area-context | 5.4.0 | 5.6.2 |
+| react-native-screens | 4.11.1 | 4.16.0 |
+| react-native-web | ~0.20.0 | ~0.21.2 |
+| @types/react | ~19.0.14 | 19.1.17 (literal — override pin) |
+| typescript (mobile) | ~5.8.3 | ^5.9.3 (mobile stays below root ^6.0.3, intentional per Phase 5) |
+
+### Root `package.json` pnpm.overrides bumps
+Literal pins updated to match the SDK 54 cohort (per Phase 2 Task 2.2 closeout — Phase 4 revisit point called out in the handoff doc):
+
+```
+"react":         "19.0.0"  → "19.1.0"
+"react-dom":     "19.0.0"  → "19.1.0"
+"react-native":  "0.79.6"  → "0.81.5"
+"@types/react":  "19.0.14" → "19.1.17"
+"expo-location": "18.1.6"  → "19.0.8"
+```
+
+Decision: stayed on literal pins (did not widen to caret). Caret widening remains a Phase 4 option if SDK 55 churns the cohort again. Rationale: literal pins worked cleanly in Phase 2 and gates stayed green here; don't change two things at once.
+
+### `app.json` plugin deduplication (regression repeat)
+`expo install --fix` re-introduced the duplicate `@sentry/react-native` bare plugin alongside `@sentry/react-native/expo` — same regression that Phase 1 fixed in `299bafb`. Removed the bare entry; kept `@sentry/react-native/expo`. Also preserved the new `expo-web-browser` plugin entry that `expo install --fix` added legitimately (SDK 54 now requires a config plugin for `expo-web-browser`).
+
+Final `app.json` plugin order:
+```
+expo-router, expo-secure-store, expo-notifications, expo-apple-authentication,
+expo-location, @sentry/react-native/expo, expo-web-browser
+```
+
+### Gate results (exit codes)
+| Check | Baseline | Phase 2 Task 2.2 | Phase 3 Task 3.1 | Delta vs Phase 2 |
+|-------|----------|------------------|------------------|-------|
+| typecheck | 1 | 0 | **0** | 0 (still green — scrubSentryEvent generic signature insulated core from Sentry type churn) |
+| test | 0 (95/95) | 0 (95/95) | **0** (95/95) | 0 |
+| lint | 0 errors, 4 warnings | 0 errors, 4 warnings | **0** errors, 4 warnings | 0 |
+| web build (`pnpm build`) | not baselined | 0 (15 routes, 242 kB FL JS) | **0** (15 routes, 242 kB FL JS) | 0 |
+| mobile iOS bundle export | 5.44 MB HBC (Phase 1) | 5.83 MB HBC | **6.08 MB** HBC | +0.25 MB (SDK 54 runtime + Sentry v8 core) |
+
+**Notable surprise**: typecheck stayed GREEN on this bump despite Sentry crossing three majors (v6 → v8). Root cause: `scrubSentryEvent<T>(event: T): T` in `packages/core/src/observability/sentryScrubber.ts` is intentionally generic and does not import Sentry types — it walks a loose `Record<string, unknown>` shape. The `beforeSend`/`beforeSendTransaction` call-sites in `apps/mobile/app/_layout.tsx` pass the event straight through without type narrowing. Sentry v8's tightened `beforeSend` signature accepts this without complaint. Phase 3 Task 3.2 still has work to do (session-replay default, Sentry.init behavior, tracing instrumentation API), but typecheck isn't flagging it; Task 3.2 should focus on *runtime* migration rather than type-breakage triage.
+
+Artifacts: `docs/superpowers/plans/baseline/phase3-task31-{typecheck,test,lint,webbuild,bundle,pnpm-install,expo-install-fix}.txt`. Each `{typecheck,test,lint,webbuild,bundle}.txt` has HEAD SHA + ISO timestamp headers and an explicit `EXIT=$?` line — addresses the Phase 2 Task 2.2 review finding on silent-success evidence.
+
+### Scope leaks / observations for Task 3.2
+1. **`packages/core/package.json` peer-dependency ranges are now stale.** `>=6.0.0` for expo-device, `>=0.28.0` for expo-notifications, `>=13.0.0` for expo-secure-store, `>=17.0.0` for expo-location all pre-date the SDK 54 cohort. pnpm is optimistically resolving these peers to old versions in `packages/core`'s dependency tree (`expo-device@6.0.2`, `expo-notifications@0.28.19`, `expo-secure-store@13.0.2`, `expo-constants@16.0.2`) — visible via `pnpm ls --filter=@sovio/core --depth=0`. Web/mobile build and typecheck don't exercise these because the real versions come from `apps/mobile`. Not blocking, but worth tightening the peer floors in Task 3.2 (e.g. `expo-notifications: ">=0.32.0"`). Out of scope for Task 3.1 per the allow-list.
+2. **`@expo/metro-runtime@5.0.5` peer warning.** `expo-router@6.0.23` declares peer `@expo/metro-runtime@^6.1.2`, but the cohort ships 5.0.5. Upstream mismatch on Expo's side; not a regression we introduced. Revisit if expo-router's Metro runtime access actually breaks something; otherwise noise.
+3. **TypeScript mobile bumped from ~5.8.3 → ^5.9.3** via expo install --fix (SDK 54's new mobile peer). Root workspace stays on `^6.0.3`; divergence documented in Phase 1 log and remains a Phase 5 concern.
+4. **pnpm emitted `ENOENT` bin-link warnings** for `@sentry/react-native`'s `sentry-eas-build-on-{complete,error,success}` hook scripts (Windows `.EXE` stat failures on Unix-style bin entries). Cosmetic — the hooks are only used inside EAS Build's Linux environment, not local dev. Harmless on this workstation; will not impact EAS CI.
+
+### Review findings placeholder
+Spec-review + code-review agents to run in parallel after this commit. Findings slot in here.
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
-- [ ] Phase 2 — Expo 53 (React 19)
-- [ ] Phase 3 — Expo 54 (+ Sentry RN 5 → 8 single jump)
+- [x] Phase 2 — Expo 53 (React 19) — all gates green at 6eaf5aa; handoff doc at 53c3fe6
+- [ ] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Task 3.1 complete (all gates green, including typecheck which stayed intentionally-might-be-red but wasn't); Tasks 3.2 / 3.3 pending
 - [ ] Phase 4 — Expo 55
 - [ ] Phase 5 — Companion ecosystem
 - [ ] Phase 6 — Web cleanup

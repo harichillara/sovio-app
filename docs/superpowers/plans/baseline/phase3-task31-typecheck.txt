@@ -1,0 +1,10 @@
+HEAD=048c3f7bbb499db159b5c70661b64fa5e6cb1307
+TIMESTAMP=2026-04-23T20:07:15Z
+CMD=pnpm typecheck
+---
+
+> sovio@ typecheck D:\Download\AI\Sovio
+> pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit
+
+---
+EXIT=0
