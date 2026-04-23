@@ -1,0 +1,61 @@
+# Pre-merge full 5-gate sweep
+# HEAD=9a6f812718795a5ffe3ff9075ec838eaaf80bd55
+# TIMESTAMP=2026-04-23T22:39:59Z
+# Purpose: authoritative green-light receipt for opening PR against master.
+
+## typecheck
+
+> sovio@ typecheck D:\Download\AI\Sovio
+> pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit
+
+EXIT=0
+
+## lint
+D:\Download\AI\Sovio\packages\core\src\analytics\eventBuffer.ts
+  130:9  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  135:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  200:7  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-var-requires')
+
+✖ 4 problems (0 errors, 4 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+
+EXIT=0
+
+## test
+
+
+ RUN  v4.1.4 D:/Download/AI/Sovio
+
+
+ Test Files  9 passed (9)
+      Tests  95 passed (95)
+   Start at  17:40:56
+   Duration  886ms (transform 1.04s, setup 0ms, import 1.99s, tests 261ms, environment 2ms)
+
+EXIT=0
+
+## web build
+├ ○ /terms                                 319 B         243 kB
+└ ○ /waitlist                            1.14 kB         245 kB
++ First Load JS shared by all             242 kB
+  ├ chunks/338f75d0-99d9a5b0ec80eabe.js  54.4 kB
+  ├ chunks/392-56f8ff3d50ef4c4e.js        171 kB
+  ├ chunks/3f8177d5-18577218767e3da8.js    12 kB
+  └ other shared chunks (total)          5.39 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+EXIT=0
+
+## iOS bundle export
+
+› ios bundles (1):
+_expo/static/js/ios/index-acf3476f6bb6de6fdc2cb3c7cf16d55e.hbc (5.7MB)
+
+› Files (1):
+metadata.json (2.8KB)
+
+Exported: C:/Users/haric/AppData/Local/Temp/sovio-bundle-premerge
+EXIT=0
