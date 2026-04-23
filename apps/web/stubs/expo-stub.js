@@ -6,7 +6,7 @@
 // location, modules-core) with no-op implementations so the web bundle
 // resolves cleanly.
 //
-// SDK 53 note: `expo-modules-core@2.5.0` ships raw `.ts` as its entry
+// SDK 54 note: `expo-modules-core@3.0.29` still ships raw `.ts` as its entry
 // (`"main": "src/index.ts"`), which Next 15's webpack cannot parse. Aliasing
 // here short-circuits the resolution before webpack sees the raw TS.
 const asyncNull = async () => null;
@@ -48,7 +48,7 @@ module.exports = {
   getForegroundPermissionsAsync: async () => ({ status: 'undetermined' }),
   getCurrentPositionAsync: async () => ({ coords: { latitude: 0, longitude: 0 }, timestamp: 0 }),
 
-  // expo-modules-core — its v2.5.0 entry is raw TS; stub the surface
+  // expo-modules-core — its v3.0.29 entry is still raw TS; stub the surface
   // that `expo` and `expo-location` touch at import time. All call sites
   // on web are dead code paths behind `Platform.OS === 'web'` guards.
   NativeModule: class {},

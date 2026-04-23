@@ -307,11 +307,98 @@ Artifacts: `docs/superpowers/plans/baseline/phase3-task31-{typecheck,test,lint,w
 ### Review findings placeholder
 Spec-review + code-review agents to run in parallel after this commit. Findings slot in here.
 
+## Phase 3 Task 3.2 — Close review findings: Sentry v8 runtime + core peer floors + web React alignment
+
+**Date**: 2026-04-23
+**Pre-change SHA**: 841fe4424817592f71fc2b50fb9396c552042008 (Task 3.1 head)
+**Executed by**: Claude Opus 4.7 (automated)
+
+### Review findings closed
+
+**HIGH-1 — Sentry RN v8 runtime migration (`apps/mobile/app/_layout.tsx`)**
+Sentry v8 no longer auto-registers `ReactNativeTracing`; a bare `Sentry.init({ tracesSampleRate: 0.1 })` silently no-ops tracing at runtime. Declared the integration explicitly and added a belt-and-suspenders replay opt-out so v9+ defaults can't surprise us:
+
+```ts
+integrations: [
+  Sentry.reactNativeTracingIntegration(),
+  // If/when we enable replay: Sentry.mobileReplayIntegration({ maskAllText: true }),
+],
+replaysSessionSampleRate: 0,
+replaysOnErrorSampleRate: 0,
+```
+
+Verified `Sentry.wrap(RootLayout)` and `Sentry.captureException(err, { contexts: { react: { componentStack } } })` are both still v8-stable (API unchanged since v6). No call-site changes needed there.
+
+**HIGH-2 — `packages/core` peerDependency floors (stale pre-SDK 54)**
+Task 3.1 flagged that loose floors were letting pnpm co-install old expo-* versions in the `@sovio/core` peer tree. Tightened to SDK 54 cohort (`>=`, not caret, so mobile's `~N.x.y` pins still satisfy):
+
+| Peer | Old floor | New floor |
+|---|---|---|
+| `expo-device` | `>=6.0.0` | `>=8.0.0` |
+| `expo-notifications` | `>=0.28.0` | `>=0.32.0` |
+| `expo-secure-store` | `>=13.0.0` | `>=15.0.0` |
+| `expo-location` | `>=17.0.0` | `>=19.0.0` |
+
+`expo-constants`, `expo-updates`, `expo-auth-session` are not declared as peers of `@sovio/core` (only mobile depends on them directly) — confirmed; no change needed. `react` (`>=19.0.0`) and `react-native` (`>=0.73.0`) left as-is; both already satisfied by SDK 54 and widening further serves no purpose.
+
+**MEDIUM-1 — `apps/web` React version alignment**
+Root `pnpm.overrides` already forces `19.1.0` / `19.1.17`; web's declared deps drifted at `19.0.0` / `^19.0.14`. Matched literals to the override (conservative — widening to caret is still a Phase 4 concern):
+
+| Dep | Old | New |
+|---|---|---|
+| `react` | `19.0.0` | `19.1.0` |
+| `react-dom` | `19.0.0` | `19.1.0` |
+| `@types/react` | `^19.0.14` | `19.1.17` |
+
+**LOW — Stale comments**
+- `apps/web/stubs/expo-stub.js`: updated SDK 53 + `expo-modules-core@2.5.0` references to SDK 54 + `expo-modules-core@3.0.29` (both comment blocks).
+- `apps/mobile/app/_layout.tsx`: updated "expo-router 5 types useSegments" to "expo-router 6 still types useSegments" (the cast itself is still required — the TS shape didn't change across v5→v6).
+
+### Dedupe verification (`pnpm -r why` — each returns 1 unique version)
+
+```
+expo-device:        1 unique version(s)  → 8.0.10
+expo-notifications: 1 unique version(s)  → 0.32.16
+expo-secure-store:  1 unique version(s)  → 15.0.8
+expo-constants:     1 unique version(s)  → 18.0.13
+expo-location:      1 unique version(s)  → 19.0.8
+```
+
+Lockfile net change from peer tightening: `Packages: +1 -10` (10 old expo-* store entries pruned; one new resolution added because pnpm re-computed `@sovio/core`'s peer tree to land on the current cohort). Task 3.1's co-installed duplicates (`expo-device@6.0.2`, `expo-notifications@0.28.19`, `expo-secure-store@13.0.2`, `expo-constants@16.0.2`) are gone.
+
+### `app.json` plugin verification
+Not running `expo install --fix` in Task 3.2, so the duplicate-bare-plugin regression from Phase 1 / Task 3.1 can't recur. Confirmed: one `@sentry/react-native/expo` entry, no bare `@sentry/react-native`. Final plugin order matches Task 3.1:
+
+```
+expo-router, expo-secure-store, expo-notifications, expo-apple-authentication,
+expo-location, @sentry/react-native/expo, expo-web-browser
+```
+
+### Gate results (exit codes)
+
+| Check | Baseline | Task 3.1 | Task 3.2 | Delta vs 3.1 |
+|-------|----------|----------|----------|---|
+| typecheck | 1 | 0 | **0** | 0 |
+| test | 0 (95/95) | 0 (95/95) | **0** (95/95) | 0 |
+| lint | 0 errors, 4 warnings | 0 errors, 4 warnings | **0** errors, 4 warnings | 0 |
+| web build (`pnpm build`) | not baselined | 0 (15 routes, 242 kB FL JS) | **0** (15 routes, 242 kB FL JS) | 0 |
+| mobile iOS bundle export | 5.44 MB (Phase 1) | 6.08 MB | **6.08 MB** HBC | 0 (byte-for-byte identical) |
+
+Artifacts: `docs/superpowers/plans/baseline/phase3-task32-{typecheck,test,lint,webbuild,bundle}.txt`. Each carries HEAD SHA + ISO timestamp + explicit `EXIT=$?` per-command (format precedent from Phase 2 Task 2.2 review).
+
+### Scope leaks / observations
+None. All changes inside the allow-list (apps/mobile/app/_layout.tsx, packages/core/package.json, apps/web/package.json, apps/web/stubs/expo-stub.js, pnpm-lock.yaml, MIGRATION_LOG.md, docs/superpowers/plans/baseline/phase3-task32-*). `apps/mobile/app.json` not touched. `packages/core/src/observability/sentryScrubber.ts` deliberately not touched (review-verified generic signature is insulation by design). The pre-existing pnpm peer warnings (`@expo/metro-runtime@5.0.5` vs expo-router's `^6.1.2` expectation, `@expo/require-utils` TS peer mismatch) are unchanged upstream noise, not introduced here.
+
+### Observations for Task 3.3 / Phase 3 gate
+1. **Sentry v8 runtime path is now wired but unverified on device.** Typecheck + export both pass, but `reactNativeTracingIntegration()` is only meaningful once the app runs on a device/simulator and emits a real transaction. A manual EAS build + simulator launch remains the only way to confirm traces land in Sentry — the same "device smoke deferred" caveat we've carried since Phase 1. Flag for Phase 3 gate review.
+2. **`@expo/metro-runtime` peer warning persists.** expo-router 6.0.23 wants `^6.1.2`, cohort ships 5.0.5. Not regressed by Task 3.2; upstream to fix.
+3. **Web build is unchanged (242 kB FL JS).** The literal `19.0.0` → `19.1.0` bump in `apps/web/package.json` was a declarative fix only — the installed tree already held 19.1.0 via overrides, so runtime output is byte-identical. Good signal that MEDIUM-1 was a drift fix, not a runtime regression.
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
 - [x] Phase 2 — Expo 53 (React 19) — all gates green at 6eaf5aa; handoff doc at 53c3fe6
-- [ ] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Task 3.1 complete (all gates green, including typecheck which stayed intentionally-might-be-red but wasn't); Tasks 3.2 / 3.3 pending
+- [ ] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Tasks 3.1 + 3.2 complete (all gates green; Sentry v8 runtime config + core peer floors + web React alignment landed); Task 3.3 pending only if Phase 3 gate review surfaces new findings
 - [ ] Phase 4 — Expo 55
 - [ ] Phase 5 — Companion ecosystem
 - [ ] Phase 6 — Web cleanup

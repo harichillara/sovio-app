@@ -11,10 +11,10 @@
     "zustand": "^5.0.12"
   },
   "peerDependencies": {
-    "expo-device": ">=6.0.0",
-    "expo-location": ">=17.0.0",
-    "expo-notifications": ">=0.28.0",
-    "expo-secure-store": ">=13.0.0",
+    "expo-device": ">=8.0.0",
+    "expo-location": ">=19.0.0",
+    "expo-notifications": ">=0.32.0",
+    "expo-secure-store": ">=15.0.0",
     "react": ">=19.0.0",
     "react-native": ">=0.73.0"
   },
