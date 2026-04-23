@@ -394,11 +394,76 @@ None. All changes inside the allow-list (apps/mobile/app/_layout.tsx, packages/c
 2. **`@expo/metro-runtime` peer warning persists.** expo-router 6.0.23 wants `^6.1.2`, cohort ships 5.0.5. Not regressed by Task 3.2; upstream to fix.
 3. **Web build is unchanged (242 kB FL JS).** The literal `19.0.0` → `19.1.0` bump in `apps/web/package.json` was a declarative fix only — the installed tree already held 19.1.0 via overrides, so runtime output is byte-identical. Good signal that MEDIUM-1 was a drift fix, not a runtime regression.
 
+## Phase 3 Task 3.3 — Correct Sentry replay opt-out + tracing rationale + expo-auth-session peer
+
+**Date**: 2026-04-23
+**Pre-change SHA**: e8afb48878b4eaea2e35f5f7264f97b5e09d9e69 (Task 3.2 head)
+**Executed by**: Claude Opus 4.7 (automated)
+
+Task 3.2's code review surfaced two HIGH findings and one MEDIUM — all small, mechanical corrections to rationale and peer declarations, none changing runtime behavior in a user-visible way. Closed in a single commit.
+
+### Review findings closed
+
+**HIGH-1 — Tracing integration rationale was factually wrong**
+The Task 3.2 comment claimed "Sentry RN v8 no longer auto-registers `ReactNativeTracing`; a bare `Sentry.init({ tracesSampleRate: 0.1 })` silently no-ops tracing at runtime." That is **false** for `@sentry/react-native@8.9.1`. Verified against `node_modules/@sentry/react-native/dist/js/integrations/default.js`: the default integrations builder pushes `reactNativeTracingIntegration()` whenever `typeof tracesSampleRate === 'number'` **and** `enableAutoPerformanceTracing` is truthy (default `true`). So tracing was already auto-registered in Task 3.2 and the explicit entry was redundant (and harmlessly deduped by `filterDuplicates` in `@sentry/core`).
+
+The integration entry is **kept** — explicit-for-clarity is a legitimate choice, and the dedupe protects against double-init — but the comment was rewritten to reflect how v8 actually behaves, so the next reader isn't taught the wrong mental model.
+
+**HIGH-2 — "Replay opt-out" was actually an opt-in**
+Task 3.2 added:
+```ts
+replaysSessionSampleRate: 0,
+replaysOnErrorSampleRate: 0,
+```
+as a "belt-and-suspenders opt-out." But `default.js` registers `mobileReplayIntegration()` on **any numeric value** of either key — the condition is `typeof replaysSessionSampleRate === 'number' || typeof replaysOnErrorSampleRate === 'number'`, not `> 0`. So our "opt-out" registered the replay integration (idle at 0% sample rate, but active on the integrations list). True opt-out = **omit both keys entirely**.
+
+Both keys were removed. The integration is no longer registered at all.
+
+**MEDIUM — `expo-auth-session` imported without peer declaration**
+`packages/core/src/services/auth.service.ts:7` imports `expo-auth-session` (`makeRedirectUri`). Task 3.2 tightened expo-device / expo-notifications / expo-secure-store / expo-location peer floors but missed this one. Mobile app provides it transitively today (`expo-auth-session@7.0.10`), but declaring it as a peer tightens the soft coupling and lets pnpm warn on future drift. Added to `peerDependencies` with floor `>=7.0.0` (matching the SDK 54 cohort's resolved version). Not marked optional in `peerDependenciesMeta` — auth is a core flow, matching the non-optional treatment of `expo-secure-store`.
+
+### Behavior delta
+
+The underlying runtime code behavior did **not** change meaningfully:
+
+| Concern | Task 3.2 (shipped) | Task 3.3 (now) |
+|---|---|---|
+| Tracing integration | Auto-registered by v8 default + explicitly declared (deduped) | Auto-registered by v8 default + explicitly declared (deduped) |
+| Replay integration | Registered-but-idle (0% sample rate) | Not registered at all |
+| `expo-auth-session` version resolved | `7.0.10` via mobile's direct dep | `7.0.10` via mobile's direct dep (now also a declared peer of `@sovio/core`) |
+
+### Dedupe verification (`pnpm -r why` — each returns 1 unique version)
+
+```
+@sentry/react-native:  1 unique version → 8.9.1
+expo-auth-session:     1 unique version → 7.0.10
+```
+
+`pnpm install` reported "Already up to date" — adding the `expo-auth-session` peer was a lockfile noop because mobile's direct dep already satisfied the new constraint.
+
+### Gate results (exit codes)
+
+| Check | Task 3.2 | Task 3.3 | Delta |
+|-------|----------|----------|-------|
+| typecheck | 0 | **0** | 0 |
+| test | 0 (95/95) | **0** (95/95) | 0 |
+| lint | 0 errors, 4 warnings | **0** errors, 4 warnings | 0 |
+| web build (`pnpm build`) | 0 (15 routes, 242 kB FL JS) | **0** (15 routes, 242 kB FL JS) | 0 |
+| mobile iOS bundle export | 6.08 MB HBC | **6.08 MB** HBC (6,081,619 bytes) | 0 at reported precision |
+
+**Bundle size delta**: negligible. Removing the two `replays*SampleRate` keys drops four property initializations and prevents `mobileReplayIntegration()` from being pushed onto the default integrations array at runtime. The integration itself is mostly native-side, so the JS bundle shrinkage would be in tens of bytes at most — below the Expo CLI's "6.08 MB" reporting precision. The gzipped HBC at this scale is insensitive to the change.
+
+Artifacts: `docs/superpowers/plans/baseline/phase3-task33-{typecheck,test,lint,webbuild,bundle}.txt`. Each carries parent SHA + ISO timestamp + explicit `EXIT=$?`. Artifacts were captured **before** committing (parent SHA is e8afb48, Task 3.2 head); post-commit re-verification is not needed because the changes are purely editorial / declarative and the gates all passed on the working tree.
+
+### Scope leaks / observations
+
+None. All changes inside the allow-list (apps/mobile/app/_layout.tsx, packages/core/package.json, pnpm-lock.yaml noop, MIGRATION_LOG.md, docs/superpowers/plans/baseline/phase3-task33-*). `scrubSentryEvent` deliberately not touched. `supabase/functions/*` not touched. Root `package.json` overrides not touched (Phase 4 concern). Peer floors not widened to caret (Phase 4 concern).
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
 - [x] Phase 2 — Expo 53 (React 19) — all gates green at 6eaf5aa; handoff doc at 53c3fe6
-- [ ] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Tasks 3.1 + 3.2 complete (all gates green; Sentry v8 runtime config + core peer floors + web React alignment landed); Task 3.3 pending only if Phase 3 gate review surfaces new findings
+- [ ] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Tasks 3.1 + 3.2 + 3.3 complete (all gates green; Sentry v8 runtime config corrected, core peer floors + expo-auth-session declaration landed, web React alignment landed); ready for Phase 3 gate review
 - [ ] Phase 4 — Expo 55
 - [ ] Phase 5 — Companion ecosystem
 - [ ] Phase 6 — Web cleanup

@@ -206,6 +206,9 @@ importers:
       base64-arraybuffer:
         specifier: ^1.0.2
         version: 1.0.2
+      expo-auth-session:
+        specifier: '>=7.0.0'
+        version: 7.0.10(expo@54.0.33)(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@13.6.9)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       expo-device:
         specifier: '>=8.0.0'
         version: 8.0.10(expo@54.0.33)

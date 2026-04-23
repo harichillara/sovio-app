@@ -17,16 +17,21 @@ Sentry.init({
   dsn: SENTRY_DSN,
   enabled: !!SENTRY_DSN,
   tracesSampleRate: 0.1,
-  // Sentry RN v8 no longer auto-registers tracing — declare explicitly or
-  // `tracesSampleRate` silently no-ops at runtime.
+  // Sentry RN v8 auto-registers `reactNativeTracingIntegration()` whenever
+  // `tracesSampleRate` is numeric and `enableAutoPerformanceTracing` stays at
+  // its default (true). The explicit entry below is redundant-but-safe: it
+  // future-proofs against Sentry tightening the auto-register heuristic and
+  // serves as documentation-in-code. `@sentry/core`'s `filterDuplicates`
+  // dedupes integrations by `name`, so there is no double-init risk.
+  //
+  // Session replay is NOT registered by default in v8. To keep it OFF, simply
+  // do NOT set `replaysSessionSampleRate` / `replaysOnErrorSampleRate` — any
+  // numeric value (including 0) triggers `mobileReplayIntegration()` to be
+  // pushed onto the default integrations list.
   integrations: [
     Sentry.reactNativeTracingIntegration(),
     // If/when we enable replay: Sentry.mobileReplayIntegration({ maskAllText: true }),
   ],
-  // Belt-and-suspenders opt-out for session replay. v8 keeps it off by
-  // default, but v9+ may flip this; pinning to 0 prevents a surprise.
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 0,
   // Strip PII and secrets before leaving device. Catches Stripe keys,
   // JWTs, Bearer headers, and email local-parts across all event fields.
   beforeSend: (event) => scrubSentryEvent(event),
