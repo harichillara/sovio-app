@@ -573,14 +573,23 @@ Artifacts: `docs/superpowers/plans/baseline/phase4-task41-{typecheck,test,lint,w
 
 6. **`@expo/require-utils` peer wants TS `^5.x`**. Peer-dep warning against the workspace TS `^6.0.3`; the lone mobile workspace stays on TS 5.9.3 so the actual mobile cohort is satisfied. Not a regression.
 
-### Review findings placeholder
-Spec-review + code-review agents to run in parallel after this commit. Findings slot in here (expected pattern from Phase 3 Tasks 3.1 / 3.2 / 3.3).
+### Review findings (parallel spec + code reviews at HEAD=1b74fc5)
+
+**Spec review verdict: PASS-WITH-NOTES.** All plan-required Task 4.1 deliverables shipped, all 5 gates EXIT=0 with compliant receipts. Spec reviewer noted the Sentry v8 directive was briefly violated in commit `2a636ac` (cohort downgrade left in place) then self-corrected in `1b74fc5` — classified as correct recovery, not a scope leak. LOW notes: plan Step 3 (RN upgrade-helper consult) undocumented (acceptable for managed Expo), Step 5 (manual device QA) deferred per Phase 1/2/3 precedent.
+
+**Code review verdict: PASS-WITH-FINDINGS.** Two MED latent-risk findings, both documentation-class; no runtime blockers.
+
+- **MED-1 (addressed here): override literal pins must bump atomically.** `@sentry/react-native@8.9.1` bakes exact peer constraints `react@19.2.0` and `react-native@0.83.6` into its manifest. Since we hold all three at literal values in root `pnpm.overrides`, bumping any one without the others (e.g., a React 19.2.1 security patch) would trigger pnpm peer-satisfaction errors or silent multi-React installs. **Mitigation**: when bumping any of `react`, `react-dom`, `react-native`, or `@sentry/react-native` in `pnpm.overrides`, verify the post-install state with `pnpm -r why react && pnpm -r why @sentry/react-native` and confirm each still reports 1 version. Future cohort phases should bump the four as a set or explicitly note why they diverge.
+
+- **MED-2 (addressed here): Sentry RN v8 and Sentry Next v10 share `@sentry/core@10.49.0`.** Per `pnpm-lock.yaml`, `@sentry/react-native@8.9.1` resolves `@sentry/core@10.49.0` — the same core as `@sentry/nextjs@10.49.0`. No conflict today (independent runtimes, clean dedup), but the major-version label divergence ("v8 RN" vs "v10 Next") hides the shared core. A future contributor "aligning" RN to v10 could land a `@sentry/core` incompatible with the RN native bridge. The label gap is intentional on Sentry's side (the RN SDK is versioned independently of the JS SDKs) — do not attempt to harmonize the major numbers.
+
+- **INFO (dismissed — reviewer mistake): `Array.isArray(e.breadcrumbs)` guard in `packages/core/src/observability/sentryScrubber.ts:150`.** Reviewer claimed the guard always fails under v8 because `breadcrumbs` is `{ values?: Breadcrumb[] }`. Verified against `node_modules/@sentry/core/build/types/types-hoist/event.d.ts:45`: `breadcrumbs?: Breadcrumb[]` — a bare array, exactly as the scrubber assumes. The `{ values }` envelope is a transport/Scope shape, not the `Event.breadcrumbs` shape. Scrubber is correct. No action.
 
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
 - [x] Phase 2 — Expo 53 (React 19) — all gates green at 6eaf5aa; handoff doc at 53c3fe6
 - [x] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Tasks 3.1 + 3.2 + 3.3 complete; commits 048c3f7 (handoff) and predecessors
-- [ ] Phase 4 — Expo 55 — Task 4.1 complete (all five gates green; newArchEnabled=false retained; cohort bump landed cleanly, no call-site breaks)
+- [x] Phase 4 — Expo 55 — Task 4.1 complete (commit `2a636ac` + follow-up `1b74fc5` re-pinning Sentry v8; all five gates green; newArchEnabled=false retained; parallel reviews PASS/PASS-WITH-FINDINGS — both MED findings addressed in MIGRATION_LOG; no Task 4.2 call-site fixup needed — typecheck stayed green on SDK 55); device smoke deferred to gate per Phase 1/2/3 pattern
 - [ ] Phase 5 — Companion ecosystem
 - [ ] Phase 6 — Web cleanup
