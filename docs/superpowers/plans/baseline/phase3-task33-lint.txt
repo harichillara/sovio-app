@@ -1,0 +1,23 @@
+# Phase 3 Task 3.3 — lint
+# Parent SHA: e8afb48
+# Working tree: Task 3.3 edits applied, not yet committed
+# Timestamp: 2026-04-23T20:53:14Z
+# Command: pnpm lint
+---
+
+> sovio@ lint D:\Download\AI\Sovio
+> eslint packages/core/src packages/tokens/src packages/ui/src apps/mobile/app apps/mobile/components apps/web/app apps/web/components
+
+
+D:\Download\AI\Sovio\packages\core\src\analytics\eventBuffer.test.ts
+  47:5  warning  Unused eslint-disable directive (no problems were reported from 'no-await-in-loop')
+
+D:\Download\AI\Sovio\packages\core\src\analytics\eventBuffer.ts
+  130:9  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  135:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  200:7  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-var-requires')
+
+✖ 4 problems (0 errors, 4 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+
+EXIT=0

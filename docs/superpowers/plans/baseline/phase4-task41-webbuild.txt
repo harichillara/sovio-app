@@ -1,0 +1,41 @@
+# Phase 4 Task 4.1 web build
+# Parent SHA: 42fe3f7609be88d3054491e1e373e72713b14306 (pre-commit)
+# ISO timestamp: 2026-04-23T21:26:23Z
+# Command: pnpm build
+
+   Next.js 15.5.15
+   - Environments: .env.local
+   - Experiments (use with caution):
+     - clientTraceMetadata
+
+   Creating an optimized production build ...
+[@sentry/nextjs] It appears you've configured a `sentry.server.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead.
+[@sentry/nextjs] Could not find a Next.js instrumentation file. (pre-existing warning, not introduced this phase)
+[@sentry/nextjs] DEPRECATION WARNING: It is recommended renaming your `sentry.client.config.ts` file. (pre-existing, Phase 6 concern)
+ Compiled successfully in 62s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (15/15)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
++ / (static)                             2.33 kB         286 kB
++ /_not-found                            1.15 kB         244 kB
++ /account                               1.71 kB         249 kB
++ /account/privacy                       2.15 kB         249 kB
++ /api/dsar (dynamic)                      319 B         243 kB
++ /api/health (dynamic)                    319 B         243 kB
++ /api/waitlist (dynamic)                  320 B         243 kB
++ /cookies                                 352 B         245 kB
++ /login                                 1.64 kB         249 kB
++ /pricing                               1.47 kB         285 kB
++ /privacy                                 351 B         245 kB
++ /signup                                1.82 kB         249 kB
++ /terms                                   319 B         243 kB
++ /waitlist                              1.14 kB         245 kB
++ First Load JS shared by all            242 kB
+
+15 routes total, 242 kB First Load JS shared — identical to Phase 3 Task 3.3 baseline.
+
+EXIT=0

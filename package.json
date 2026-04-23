@@ -29,7 +29,13 @@
     "overrides": {
       "tar": ">=7.4.3",
       "rollup": ">=4.22.4",
-      "@xmldom/xmldom": ">=0.8.12"
+      "@xmldom/xmldom": ">=0.8.13 <0.9",
+      "react": "19.2.0",
+      "react-dom": "19.2.0",
+      "react-native": "0.83.6",
+      "@types/react": "19.2.14",
+      "expo-location": "55.1.8",
+      "@sentry/react-native": "8.9.1"
     }
   }
 }

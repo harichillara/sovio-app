@@ -1,0 +1,46 @@
+env: load .env
+env: export EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_GEMINI_API_KEY
+[33m› [1m[@sentry/react-native/expo][22m Missing config for [1morganization, project[22m. Environment variables will be used as a fallback during the build. https://docs.sentry.io/platforms/react-native/manual-setup/[0m
+Starting Metro Bundler
+iOS Bundled 20195ms apps\mobile\index.js (1778 modules)
+
+› Assets (41):
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\AntDesign.ttf (70.3 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Entypo.ttf (66.2 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\EvilIcons.ttf (13.5 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Feather.ttf (56.2 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome.ttf (166 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Brands.ttf (134 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Regular.ttf (33.7 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome5_Solid.ttf (203 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Brands.ttf (209 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Regular.ttf (68 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Solid.ttf (424 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Fontisto.ttf (314 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Foundation.ttf (57 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Ionicons.ttf (443 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\MaterialCommunityIcons.ttf (1.15 MB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\MaterialIcons.ttf (357 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Octicons.ttf (49.4 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\SimpleLineIcons.ttf (54.1 kB)
+..\..\node_modules\.pnpm\@expo+vector-icons@14.0.4\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Zocial.ttf (25.8 kB)
+..\..\node_modules\.pnpm\@react-navigation+elements@_1044a663ba70d3081f4e1cb01c258b28\node_modules\@react-navigation\elements\lib\module\assets\back-icon-mask.png (653 B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_1044a663ba70d3081f4e1cb01c258b28\node_modules\@react-navigation\elements\lib\module\assets\back-icon.png (4 variations | 566 B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_1044a663ba70d3081f4e1cb01c258b28\node_modules\@react-navigation\elements\lib\module\assets\clear-icon.png (4 variations | 425 B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_1044a663ba70d3081f4e1cb01c258b28\node_modules\@react-navigation\elements\lib\module\assets\close-icon.png (4 variations | 235 B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_1044a663ba70d3081f4e1cb01c258b28\node_modules\@react-navigation\elements\lib\module\assets\search-icon.png (3 variations | 582 B)
+..\..\node_modules\.pnpm\expo-router@4.0.22_3f07aaa606c2c25108dd83701d9e1fff\node_modules\expo-router\assets\error.png (469 B)
+..\..\node_modules\.pnpm\expo-router@4.0.22_3f07aaa606c2c25108dd83701d9e1fff\node_modules\expo-router\assets\file.png (138 B)
+..\..\node_modules\.pnpm\expo-router@4.0.22_3f07aaa606c2c25108dd83701d9e1fff\node_modules\expo-router\assets\forward.png (188 B)
+..\..\node_modules\.pnpm\expo-router@4.0.22_3f07aaa606c2c25108dd83701d9e1fff\node_modules\expo-router\assets\pkg.png (364 B)
+..\..\node_modules\.pnpm\expo-router@4.0.22_3f07aaa606c2c25108dd83701d9e1fff\node_modules\expo-router\assets\sitemap.png (465 B)
+..\..\node_modules\.pnpm\expo-router@4.0.22_3f07aaa606c2c25108dd83701d9e1fff\node_modules\expo-router\assets\unmatched.png (4.75 kB)
+
+› ios bundles (1):
+_expo/static/js/ios/index-11ebdab3c1bd9bf3e36f8caef6d32ec0.hbc (5.44 MB)
+
+› Files (1):
+metadata.json (2.96 kB)
+
+Exported: .expo-phase1-export
+EXIT_CODE=0

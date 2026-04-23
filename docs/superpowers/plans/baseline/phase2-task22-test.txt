@@ -1,0 +1,13 @@
+
+> sovio@ test D:\Download\AI\Sovio
+> vitest run
+
+
+ RUN  v4.1.4 D:/Download/AI/Sovio
+
+
+ Test Files  9 passed (9)
+      Tests  95 passed (95)
+   Start at  23:41:09
+   Duration  719ms (transform 724ms, setup 0ms, import 1.36s, tests 186ms, environment 1ms)
+

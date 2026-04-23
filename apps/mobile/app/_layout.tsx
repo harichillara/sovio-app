@@ -17,6 +17,21 @@ Sentry.init({
   dsn: SENTRY_DSN,
   enabled: !!SENTRY_DSN,
   tracesSampleRate: 0.1,
+  // Sentry RN v8 auto-registers `reactNativeTracingIntegration()` whenever
+  // `tracesSampleRate` is numeric and `enableAutoPerformanceTracing` stays at
+  // its default (true). The explicit entry below is redundant-but-safe: it
+  // future-proofs against Sentry tightening the auto-register heuristic and
+  // serves as documentation-in-code. `@sentry/core`'s `filterDuplicates`
+  // dedupes integrations by `name`, so there is no double-init risk.
+  //
+  // Session replay is NOT registered by default in v8. To keep it OFF, simply
+  // do NOT set `replaysSessionSampleRate` / `replaysOnErrorSampleRate` — any
+  // numeric value (including 0) triggers `mobileReplayIntegration()` to be
+  // pushed onto the default integrations list.
+  integrations: [
+    Sentry.reactNativeTracingIntegration(),
+    // If/when we enable replay: Sentry.mobileReplayIntegration({ maskAllText: true }),
+  ],
   // Strip PII and secrets before leaving device. Catches Stripe keys,
   // JWTs, Bearer headers, and email local-parts across all event fields.
   beforeSend: (event) => scrubSentryEvent(event),
@@ -29,7 +44,10 @@ function RouteGuard() {
   const session = useAuthStore((s) => s.session);
   const isOnboarded = useAuthStore((s) => s.isOnboarded);
   const router = useRouter();
-  const segments = useSegments();
+  // expo-router 6 still types `useSegments` as a non-empty tuple of literal
+  // route strings, but at runtime the root path `/` yields `[]`. Widen to a
+  // plain string array so defensive length/equality checks below stay meaningful.
+  const segments = useSegments() as readonly string[];
 
   useEffect(() => {
     if (isLoading) {

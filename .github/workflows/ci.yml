@@ -38,6 +38,42 @@ jobs:
       - name: Test
         run: pnpm test
 
+  web-build:
+    name: Next.js web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # `pnpm build` runs `pnpm --filter @sovio/web build` → `next build`.
+      # The shared `@sovio/core` package imports react-native + expo-* at
+      # module level for native use; apps/web/next.config.js aliases those
+      # to stubs at webpack resolve time. Promoted to a tracked gate after
+      # the Phase 2 Task 2.1 → 2.2 regression (expo-modules-core@2.5.0
+      # shipped raw TS at its entry, which Next 15's webpack couldn't
+      # parse, breaking the web build transitively through @sovio/core's
+      # barrel export of locationService → expo-location → expo-modules-core).
+      # See docs/superpowers/plans/MIGRATION_LOG.md Phase 2 Task 2.2 for
+      # the full regression/fix history.
+      #
+      # No secrets needed: Sentry source-map upload is gated on
+      # SENTRY_AUTH_TOKEN (absent → dryRun), and public Supabase env vars
+      # are optional for build-time prerender in this codebase.
+      - name: Build web (next build)
+        run: pnpm build
+
   deno:
     name: Deno edge-fn tests
     runs-on: ubuntu-latest

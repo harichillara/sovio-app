@@ -1,0 +1,43 @@
+Legend: production dependency, optional only, dev only
+
+@sovio/mobile@0.1.0 D:\Download\AI\Sovio\apps\mobile (PRIVATE)
+│
+│   dependencies:
+├── @expo/vector-icons@14.1.0
+├── @sentry/react-native@5.36.0
+├── @sovio/core@link:../../packages/core
+├── @sovio/tokens@link:../../packages/tokens
+├── @sovio/ui@link:../../packages/ui
+├── @tanstack/react-query@5.99.1
+├── expo@51.0.39
+├── expo-apple-authentication@6.4.2
+├── expo-auth-session@5.5.2
+├── expo-constants@16.0.2
+├── expo-crypto@13.0.2
+├── expo-device@6.0.2
+├── expo-linking@6.3.1
+├── expo-location@17.0.1
+├── expo-notifications@0.28.19
+├── expo-router@3.5.24
+├── expo-secure-store@13.0.2
+├── expo-status-bar@1.12.1
+├── expo-updates@0.25.28
+├── expo-web-browser@13.0.3
+├── react@18.2.0
+├── react-dom@18.2.0
+├── react-native@0.74.5
+├── react-native-safe-area-context@4.10.5
+├── react-native-screens@3.31.1
+├── react-native-url-polyfill@3.0.0
+├── react-native-web@0.19.13
+├── zustand@4.5.7
+│
+│   devDependencies:
+├── @babel/core@7.29.0
+├── @types/react@18.2.79
+├── cross-env@10.1.0
+├── eas-cli@10.2.4
+├── expo-atlas@0.4.3
+└── typescript@5.9.3
+
+34 packages

@@ -1,0 +1,19 @@
+# Phase 4 Task 4.1 typecheck — per-workspace
+# Parent SHA: 42fe3f7609be88d3054491e1e373e72713b14306 (pre-commit)
+# ISO timestamp: 2026-04-23T21:26:23Z
+
+=== @sovio/tokens ===
+EXIT=0
+
+=== @sovio/core ===
+EXIT=0
+
+=== @sovio/ui ===
+EXIT=0
+
+=== @sovio/web ===
+EXIT=0
+
+=== @sovio/mobile ===
+EXIT=0
+

@@ -1,0 +1,29 @@
+
+> sovio@ typecheck D:\Download\AI\Sovio
+> pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit
+
+src/AppHeader.tsx(16,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type 'React.ReactNode' is not assignable to type 'import("D:/Download/AI/Sovio/node_modules/.pnpm/@types+react@18.3.28/node_modules/@types/react/index").ReactNode'.
+      Type 'bigint' is not assignable to type 'ReactNode'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type 'React.ReactNode' is not assignable to type 'import("D:/Download/AI/Sovio/node_modules/.pnpm/@types+react@18.3.28/node_modules/@types/react/index").ReactNode'.
+      Type 'bigint' is not assignable to type 'ReactNode'.
+src/AppScreen.tsx(10,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type 'React.ReactNode' is not assignable to type 'import("D:/Download/AI/Sovio/node_modules/.pnpm/@types+react@18.3.28/node_modules/@types/react/index").ReactNode'.
+      Type 'bigint' is not assignable to type 'ReactNode'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type 'React.ReactNode' is not assignable to type 'import("D:/Download/AI/Sovio/node_modules/.pnpm/@types+react@18.3.28/node_modules/@types/react/index").ReactNode'.
+      Type 'bigint' is not assignable to type 'ReactNode'.
+src/TabScreen.tsx(16,9): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ScrollViewProps): ScrollView', gave the following error.
+    Type 'React.ReactNode' is not assignable to type 'import("D:/Download/AI/Sovio/node_modules/.pnpm/@types+react@18.3.28/node_modules/@types/react/index").ReactNode'.
+      Type 'bigint' is not assignable to type 'ReactNode'.
+  Overload 2 of 2, '(props: ScrollViewProps, context: any): ScrollView', gave the following error.
+    Type 'React.ReactNode' is not assignable to type 'import("D:/Download/AI/Sovio/node_modules/.pnpm/@types+react@18.3.28/node_modules/@types/react/index").ReactNode'.
+      Type 'bigint' is not assignable to type 'ReactNode'.
+undefined
+D:\Download\AI\Sovio\packages\ui:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 2: tsc --noEmit
+ ELIFECYCLE  Command failed with exit code 1.

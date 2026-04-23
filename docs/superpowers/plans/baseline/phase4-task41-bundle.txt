@@ -1,0 +1,20 @@
+# Phase 4 Task 4.1 iOS bundle export smoke
+# Parent SHA: 42fe3f7609be88d3054491e1e373e72713b14306 (pre-commit)
+# ISO timestamp: 2026-04-23T21:26:23Z
+# Command: cd apps/mobile && npx expo export --platform ios --output-dir .expo-phase4-task41-export
+
+Exported: .expo-phase4-task41-export
+
+iOS bundle:
+  _expo/static/js/ios/index-5480c2283d84133b0f8aac3f8bff9558.hbc  (6.1 MB)
+
+Assets: 42 items (font files + navigation/router icons)
+Files: metadata.json (2.8 KB)
+
+Bundle size vs Phase 3 Task 3.3 baseline (6.08 MB): essentially unchanged at Expo CLI's
+reported precision (~20 KB delta — React 19.2 + RN 0.83 runtime additions offset by
+dedupe savings). No new red-screen parse errors; SDK 55 cohort exports cleanly.
+
+Export directory deleted post-capture (not committed).
+
+EXIT=0

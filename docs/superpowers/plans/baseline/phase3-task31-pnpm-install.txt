@@ -1,0 +1,57 @@
+Scope: all 7 workspace projects
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Progress: resolved 134, reused 123, downloaded 0, added 0
+Progress: resolved 681, reused 598, downloaded 0, added 0
+Progress: resolved 1253, reused 1170, downloaded 4, added 0
+Progress: resolved 1353, reused 1256, downloaded 4, added 0
+Progress: resolved 1419, reused 1322, downloaded 4, added 0
+ WARN  12 deprecated subdependencies found: @oclif/screen@3.0.8, @xmldom/xmldom@0.8.12, glob@6.0.4, glob@7.1.6, glob@7.2.3, inflight@1.0.6, lodash.get@4.4.2, osenv@0.1.5, rimraf@2.4.5, rimraf@3.0.2, sudo-prompt@9.1.1, sudo-prompt@9.2.1
+Packages: +72 -186
+++++++++++++++++++++++----------------------------------------------------------
+Progress: resolved 1419, reused 1322, downloaded 4, added 2
+Progress: resolved 1419, reused 1322, downloaded 4, added 14
+Progress: resolved 1419, reused 1322, downloaded 4, added 20
+Progress: resolved 1419, reused 1322, downloaded 4, added 59
+Progress: resolved 1419, reused 1322, downloaded 4, added 64
+Progress: resolved 1419, reused 1322, downloaded 5, added 66
+Progress: resolved 1419, reused 1322, downloaded 5, added 67
+Progress: resolved 1419, reused 1322, downloaded 5, added 68
+Progress: resolved 1419, reused 1322, downloaded 5, added 69
+Progress: resolved 1419, reused 1322, downloaded 5, added 70, done
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\node_modules\.bin\sentry-eas-build-on-complete. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\node_modules\.bin\sentry-eas-build-on-error. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\node_modules\.bin\sentry-eas-build-on-success. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\apps\mobile\node_modules\.bin\sentry-eas-build-on-complete. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\apps\mobile\node_modules\.bin\sentry-eas-build-on-error. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\apps\mobile\node_modules\.bin\sentry-eas-build-on-success. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\.pnpm\@sentry+react-native@8.9.1__b5d5d16ab01d66daa05a380b325263f6\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.bin\sentry-eas-build-on-complete. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.bin\sentry-eas-build-on-success. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.bin\sentry-eas-build-on-error. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.bin\sentry-eas-build-on-error. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.bin\sentry-eas-build-on-success. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\node_modules\.bin\sentry-eas-build-on-complete. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\apps\mobile\node_modules\.bin\sentry-eas-build-on-complete. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\apps\mobile\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\apps\mobile\node_modules\.bin\sentry-eas-build-on-error. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\apps\mobile\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Failed to create bin at D:\Download\AI\Sovio\apps\mobile\node_modules\.bin\sentry-eas-build-on-success. ENOENT: no such file or directory, stat 'D:\Download\AI\Sovio\apps\mobile\node_modules\@sentry\react-native\scripts\eas-build-hook.js.EXE'
+ WARN  Issues with peer dependencies found
+apps/mobile
+└─┬ expo-router 6.0.23
+  └── ✕ unmet peer @expo/metro-runtime@^6.1.2: found 5.0.5
+
+packages/core
+├─┬ expo 54.0.33
+│ └─┬ expo-asset 12.0.12
+│   └─┬ @expo/image-utils 0.8.13
+│     └─┬ @expo/require-utils 55.0.4
+│       └── ✕ unmet peer typescript@"^5.0.0 || ^5.0.0-0": found 6.0.3
+└─┬ expo-router 6.0.23
+  └── ✕ unmet peer @expo/metro-runtime@^6.1.2: found 5.0.5
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @sentry/cli@3.4.0.                                  │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+Done in 17.9s using pnpm v10.33.0

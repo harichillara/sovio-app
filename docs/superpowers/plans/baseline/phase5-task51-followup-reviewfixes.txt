@@ -1,0 +1,94 @@
+# Phase 5 Task 5.1 follow-up — review-fix verification
+# HEAD=2b0b3e8e1d5ec262283c7fbe6c94a68b38d5b738
+# TIMESTAMP=2026-04-23T22:14:14Z
+
+## Commit scope
+commit 2b0b3e8e1d5ec262283c7fbe6c94a68b38d5b738
+Author: harichillara <55264761+harichillara@users.noreply.github.com>
+Date:   Thu Apr 23 17:13:42 2026 -0500
+
+    fix(phase-5): address Task 5.1 review findings — eas.json cli.version + TS claim correction
+    
+    Two MED findings from parallel code review addressed in this commit; the
+    spec reviewer's MED (receipt HEAD mismatch) is addressed by the verification
+    receipt captured after this commit.
+    
+    Findings:
+    
+    - Code MED-1: apps/mobile/eas.json `cli.version` was `">= 10.0.0"` — stale
+      after bumping the local dev install 8 majors to eas-cli@18. That gate
+      would have accepted v10–v17 runs against a codebase tested on v18,
+      spanning breaking majors (v11 removed deprecated update flags, v13
+      changed config resolution from bundled @expo/config to npx expo config).
+      Tightened to `">= 18.0.0"` to match the tested install.
+    
+    - Code MED-2: MIGRATION_LOG Phase 5 §Step 2 claimed eas-cli "internally
+      bundles its own TypeScript 6". Verification against pnpm-lock.yaml line
+      11138 shows eas-cli@18.8.1 resolved its `typescript` peer against the
+      mobile workspace's typescript@5.9.3 — no new TS 6 copy was introduced.
+      This is the safer outcome; the claim was factually wrong. Corrected.
+    
+    - Code LOW: Documented `@sentry/node@7.77.0` as eas-cli's dev transitive,
+      distinct from the app's @sentry/node@10.49.0 (via @sentry/nextjs) and
+      @sentry/react-native@8.9.1 (root override). No runtime effect.
+    
+    - Spec MED-1: Receipt header SHAs in the prior Task 5.1 artifacts point at
+      the parent (07c12ba), not the task commit (5fdfe3f). The follow-up
+      verification receipt captured after this commit carries the correct HEAD.
+    
+    Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+ apps/mobile/eas.json                    |  2 +-
+ docs/superpowers/plans/MIGRATION_LOG.md | 10 +++++++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+## Coverage reasoning for web build + iOS bundle gates
+# This commit touches only apps/mobile/eas.json and docs/superpowers/plans/MIGRATION_LOG.md.
+# eas.json is consumed by the eas CLI at build/submit time only — it is not
+#   imported or bundled by Metro or Next.js webpack. Changing cli.version has zero
+#   effect on pnpm build or expo export outputs.
+# MIGRATION_LOG.md is markdown documentation, excluded from all build inputs.
+# Therefore the Task 5.1 parent receipts (phase5-task51-{webbuild,bundle}.txt
+#   at HEAD=5fdfe3f) remain valid for this HEAD. Re-running would reproduce them.
+
+## typecheck
+
+> sovio@ typecheck D:\Download\AI\Sovio
+> pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit
+
+EXIT=0
+
+## lint
+
+> sovio@ lint D:\Download\AI\Sovio
+> eslint packages/core/src packages/tokens/src packages/ui/src apps/mobile/app apps/mobile/components apps/web/app apps/web/components
+
+
+D:\Download\AI\Sovio\packages\core\src\analytics\eventBuffer.test.ts
+  47:5  warning  Unused eslint-disable directive (no problems were reported from 'no-await-in-loop')
+
+D:\Download\AI\Sovio\packages\core\src\analytics\eventBuffer.ts
+  130:9  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  135:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  200:7  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-var-requires')
+
+✖ 4 problems (0 errors, 4 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+
+EXIT=0
+
+## test
+
+> sovio@ test D:\Download\AI\Sovio
+> vitest run
+
+
+ RUN  v4.1.4 D:/Download/AI/Sovio
+
+
+ Test Files  9 passed (9)
+      Tests  95 passed (95)
+   Start at  17:14:55
+   Duration  1.14s (transform 1.19s, setup 0ms, import 2.12s, tests 251ms, environment 2ms)
+
+EXIT=0

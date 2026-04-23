@@ -1,0 +1,63 @@
+HEAD=048c3f7bbb499db159b5c70661b64fa5e6cb1307
+TIMESTAMP=2026-04-23T20:09:00Z
+CMD=pnpm build
+---
+
+> sovio@ build D:\Download\AI\Sovio
+> pnpm --filter @sovio/web build
+
+
+> @sovio/web@0.1.0 build D:\Download\AI\Sovio\apps\web
+> next build
+
+   ▲ Next.js 15.5.15
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · clientTraceMetadata
+
+   Creating an optimized production build ...
+[@sentry/nextjs] It appears you've configured a `sentry.server.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.server.config.ts` file afterward.
+[@sentry/nextjs] Could not find a Next.js instrumentation file. This indicates an incomplete configuration of the Sentry SDK. An instrumentation file is required for the Sentry SDK to be initialized on the server: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#create-initialization-config-files (you can suppress this warning by setting SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1 as environment variable)
+[@sentry/nextjs] It seems like you don't have a global error handler set up. It is recommended that you add a 'global-error.js' file with Sentry instrumentation so that React rendering errors are reported to Sentry. Read more: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#react-render-errors-in-app-router (you can suppress this warning by setting SENTRY_SUPPRESS_GLOBAL_ERROR_HANDLER_FILE_WARNING=1 as environment variable)
+[@sentry/nextjs] It appears you've configured a `sentry.edge.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.edge.config.ts` file afterward.
+[@sentry/nextjs] DEPRECATION WARNING: It is recommended renaming your `sentry.client.config.ts` file, or moving its content to `instrumentation-client.ts`. When using Turbopack `sentry.client.config.ts` will no longer work. Read more about the `instrumentation-client.ts` file: https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client
+ ✓ Compiled successfully in 56s
+   Linting and checking validity of types ...
+
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+   Collecting page data ...
+   Generating static pages (0/15) ...
+   Generating static pages (3/15) 
+   Generating static pages (7/15) 
+   Generating static pages (11/15) 
+ ✓ Generating static pages (15/15)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    2.33 kB         286 kB
+├ ○ /_not-found                          1.16 kB         244 kB
+├ ○ /account                             1.71 kB         249 kB
+├ ○ /account/privacy                     2.15 kB         249 kB
+├ ƒ /api/dsar                              320 B         243 kB
+├ ƒ /api/health                            319 B         243 kB
+├ ƒ /api/waitlist                          319 B         243 kB
+├ ○ /cookies                               351 B         245 kB
+├ ○ /login                               1.64 kB         249 kB
+├ ○ /pricing                             1.47 kB         285 kB
+├ ○ /privacy                               353 B         245 kB
+├ ○ /signup                              1.81 kB         249 kB
+├ ○ /terms                                 319 B         243 kB
+└ ○ /waitlist                            1.14 kB         245 kB
++ First Load JS shared by all             242 kB
+  ├ chunks/3f8177d5-3e8f1675fb180d57.js    12 kB
+  ├ chunks/4ff89cea-60ba22d713b1e025.js  54.4 kB
+  ├ chunks/69-b306970b514ab9e9.js         171 kB
+  └ other shared chunks (total)          5.39 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+---
+EXIT=0
