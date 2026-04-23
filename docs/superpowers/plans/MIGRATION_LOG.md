@@ -466,7 +466,7 @@ None. All changes inside the allow-list (apps/mobile/app/_layout.tsx, packages/c
 **Executed by**: Claude Opus 4.7 (automated)
 
 ### Procedure notes
-Mirror of Phase 3 Task 3.1's procedure: `expo install --fix` scopes cohort checks against the *installed* SDK version, so bumping `expo` to `~55.0.0` first (via `pnpm add expo@~55.0.0`) was required to let `expo install --fix` detect the SDK 55 cohort and install the 19 out-of-cohort packages. Unlike Phase 3, SDK 55's `expo install --fix` actually *downgraded* `@sentry/react-native` from `8.9.1` (Phase 3 head) to `~7.11.0` (its cohort-expected version for SDK 55). Left the downgrade in place — the plan does not direct us to hold Sentry ahead of the cohort, and `~7.11.0` is still within v8's post-release feature parity on the ReactNativeTracing + mobileReplayIntegration surface we exercise. Revisit if we discover a v7→v8 behavioral regression; otherwise cohort-aligned is correct.
+Mirror of Phase 3 Task 3.1's procedure: `expo install --fix` scopes cohort checks against the *installed* SDK version, so bumping `expo` to `~55.0.0` first (via `pnpm add expo@~55.0.0`) was required to let `expo install --fix` detect the SDK 55 cohort and install the 19 out-of-cohort packages. Unlike Phase 3, SDK 55's `expo install --fix` silently *downgraded* `@sentry/react-native` from `8.9.1` (Phase 3 head) to `~7.11.0` (its cohort-expected version for SDK 55). The downgrade was initially left in place on the working theory of "cohort-aligned is correct," but on review it directly undoes the deliberate Phase 3 v6→v8 single-jump work (3 tasks + 6 reviews) and leaves the Task 3.3 tracing rationale comment factually wrong (v7 and v8 register tracing under subtly different conditions even though the export names match). **Follow-up applied this commit**: added literal `"@sentry/react-native": "8.9.1"` to root `pnpm.overrides` and bumped `apps/mobile` declared range from `^7.11.0` back to `^8.9.1`. Re-verified 1 version installed at 8.9.1, all 5 gates EXIT=0. Future cohort bumps that try to drag Sentry below v8 should be treated the same way — the literal override holds the floor.
 
 ### Cohort Pins Resolved by `expo install --fix` (SDK 55)
 
@@ -474,7 +474,7 @@ Mirror of Phase 3 Task 3.1's procedure: `expo install --fix` scopes cohort check
 |---|---|---|
 | expo | ~54.0.33 | ~55.0.17 |
 | @expo/vector-icons | ^15.1.1 | ^15.1.1 (unchanged) |
-| @sentry/react-native | ^8.9.1 | **^7.11.0** (downgraded per SDK 55 cohort) |
+| @sentry/react-native | ^8.9.1 | **^8.9.1** (cohort tried to downgrade to ^7.11.0; reverted via follow-up override — see below) |
 | expo-apple-authentication | ~8.0.8 | ~55.0.13 |
 | expo-auth-session | ~7.0.10 | ~55.0.15 |
 | expo-constants | ~18.0.13 | ~55.0.15 |
@@ -503,11 +503,12 @@ Note: many expo-* packages jumped from their classic semver range (e.g. `~7.x`, 
 Literal pins updated to match the SDK 55 cohort. Decision (consistent with Phase 3 Task 3.1): stayed on literal pins; did *not* widen to caret. Rationale: literal pins have worked cleanly across three coordinated bumps (Phases 2 / 3 / 4) and the manual diff effort per phase is trivial. Caret widening remains an option post-migration if the maintenance burden grows.
 
 ```
-"react":         "19.1.0"  → "19.2.0"
-"react-dom":     "19.1.0"  → "19.2.0"
-"react-native":  "0.81.5"  → "0.83.6"
-"@types/react":  "19.1.17" → "19.2.14"
-"expo-location": "19.0.8"  → "55.1.8"
+"react":                 "19.1.0"  → "19.2.0"
+"react-dom":             "19.1.0"  → "19.2.0"
+"react-native":          "0.81.5"  → "0.83.6"
+"@types/react":          "19.1.17" → "19.2.14"
+"expo-location":         "19.0.8"  → "55.1.8"
+"@sentry/react-native":  (none)    → "8.9.1"  # added in follow-up to undo SDK 55 cohort's v7 downgrade
 ```
 
 ### `apps/web/package.json` version alignment
@@ -560,7 +561,7 @@ Artifacts: `docs/superpowers/plans/baseline/phase4-task41-{typecheck,test,lint,w
 
 ### Scope leaks / observations
 
-1. **`@sentry/react-native` downgraded v8 → v7 by cohort**. SDK 55's cohort pins `@sentry/react-native@~7.11.0`, and `expo install --fix` applied that downgrade. Phase 3 Task 3.1 had manually forced v8.9.1 as the "single-jump" directive per plan; SDK 55 walked us back to v7.11.0. The Sentry v8 runtime helpers we declared in Phase 3 Task 3.2 (`reactNativeTracingIntegration()`) are available in v7 with identical signatures, so `apps/mobile/app/_layout.tsx` did not need editing. **However**: the `scrubSentryEvent` generic ate the type delta. Worth a visual audit in a follow-up to confirm no v7-specific runtime behavior is required (e.g. tracing auto-registration conditions). Flagged as carry-forward — out of scope for 4.1's allow-list.
+1. **`@sentry/react-native` downgraded v8 → v7 by cohort — RESOLVED via follow-up re-pin**. SDK 55's cohort pinned `@sentry/react-native@~7.11.0`, and `expo install --fix` applied that downgrade. Phase 3 Task 3.1 had manually forced v8.9.1 as the "single-jump" directive per plan; SDK 55 walked us back to v7.11.0 silently (typecheck stayed green only because v7.11.0 happens to export the same `reactNativeTracingIntegration()` / `mobileReplayIntegration()` API surface — the `scrubSentryEvent<T>(event: T): T` generic then absorbed any residual event-shape delta). This would have orphaned the v8-specific runtime rationale embedded in `apps/mobile/app/_layout.tsx` (auto-registration semantics documented in Task 3.3). **Follow-up fix**: added literal `"@sentry/react-native": "8.9.1"` to root `pnpm.overrides` and bumped `apps/mobile` declared range to `^8.9.1`. Re-verified: `pnpm -r why @sentry/react-native` → 1 version, 8.9.1. All 5 gates still EXIT=0 (artifact `phase4-task4.1-followup-sentry-v8-repin.txt`). This preserves the deliberate Phase 3 v6→v8 single-jump and keeps the `_layout.tsx` tracing comment factually accurate.
 
 2. **Chronic `app.json` bare-plugin regression**. Third time `expo install --fix` re-added duplicate bare `@sentry/react-native` plugin (Phase 1 `299bafb`, Phase 3 Task 3.1, now Phase 4 Task 4.1). Expo CLI does not deduplicate the plugin array on merge. Consider opening an upstream issue, or documenting as a permanent post-`expo install --fix` cleanup step.
 

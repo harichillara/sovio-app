@@ -34,7 +34,8 @@
       "react-dom": "19.2.0",
       "react-native": "0.83.6",
       "@types/react": "19.2.14",
-      "expo-location": "55.1.8"
+      "expo-location": "55.1.8",
+      "@sentry/react-native": "8.9.1"
     }
   }
 }

@@ -1,0 +1,145 @@
+# Phase 4 Task 4.1 follow-up — @sentry/react-native re-pin to v8.9.1
+# HEAD=2a636ac201577150912d5d5ac39c716acc8ca7ca
+# TIMESTAMP=2026-04-23T21:41:40Z
+
+## pnpm -r why @sentry/react-native
+@sentry/react-native@8.9.1
+└── @sovio/mobile@0.1.0 (dependencies)
+
+Found 1 version of @sentry/react-native
+EXIT=0
+
+## typecheck
+
+> sovio@ typecheck D:\Download\AI\Sovio
+> pnpm --filter @sovio/tokens exec tsc --noEmit && pnpm --filter @sovio/core exec tsc --noEmit && pnpm --filter @sovio/ui exec tsc --noEmit && pnpm --filter @sovio/web exec tsc --noEmit && pnpm --filter @sovio/mobile exec tsc --noEmit
+
+EXIT=0
+
+## lint
+
+> sovio@ lint D:\Download\AI\Sovio
+> eslint packages/core/src packages/tokens/src packages/ui/src apps/mobile/app apps/mobile/components apps/web/app apps/web/components
+
+
+D:\Download\AI\Sovio\packages\core\src\analytics\eventBuffer.test.ts
+  47:5  warning  Unused eslint-disable directive (no problems were reported from 'no-await-in-loop')
+
+D:\Download\AI\Sovio\packages\core\src\analytics\eventBuffer.ts
+  130:9  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  135:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  200:7  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-var-requires')
+
+✖ 4 problems (0 errors, 4 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+
+EXIT=0
+
+## test
+
+> sovio@ test D:\Download\AI\Sovio
+> vitest run
+
+
+ RUN  v4.1.4 D:/Download/AI/Sovio
+
+
+ Test Files  9 passed (9)
+      Tests  95 passed (95)
+   Start at  16:42:31
+   Duration  985ms (transform 1.01s, setup 0ms, import 1.92s, tests 378ms, environment 2ms)
+
+EXIT=0
+
+## build (web)
+
+> sovio@ build D:\Download\AI\Sovio
+> pnpm --filter @sovio/web build
+
+
+> @sovio/web@0.1.0 build D:\Download\AI\Sovio\apps\web
+> next build
+
+   ▲ Next.js 15.5.15
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · clientTraceMetadata
+
+   Creating an optimized production build ...
+[@sentry/nextjs] It appears you've configured a `sentry.server.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.server.config.ts` file afterward.
+[@sentry/nextjs] Could not find a Next.js instrumentation file. This indicates an incomplete configuration of the Sentry SDK. An instrumentation file is required for the Sentry SDK to be initialized on the server: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#create-initialization-config-files (you can suppress this warning by setting SENTRY_SUPPRESS_INSTRUMENTATION_FILE_WARNING=1 as environment variable)
+[@sentry/nextjs] It seems like you don't have a global error handler set up. It is recommended that you add a 'global-error.js' file with Sentry instrumentation so that React rendering errors are reported to Sentry. Read more: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#react-render-errors-in-app-router (you can suppress this warning by setting SENTRY_SUPPRESS_GLOBAL_ERROR_HANDLER_FILE_WARNING=1 as environment variable)
+[@sentry/nextjs] It appears you've configured a `sentry.edge.config.ts` file. Please ensure to put this file's content into the `register()` function of a Next.js instrumentation file instead. To ensure correct functionality of the SDK, `Sentry.init` must be called inside of an instrumentation file. Learn more about setting up an instrumentation file in Next.js: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation. You can safely delete the `sentry.edge.config.ts` file afterward.
+[@sentry/nextjs] DEPRECATION WARNING: It is recommended renaming your `sentry.client.config.ts` file, or moving its content to `instrumentation-client.ts`. When using Turbopack `sentry.client.config.ts` will no longer work. Read more about the `instrumentation-client.ts` file: https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client
+ ✓ Compiled successfully in 36.2s
+   Linting and checking validity of types ...
+
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+   Collecting page data ...
+   Generating static pages (0/15) ...
+   Generating static pages (3/15) 
+   Generating static pages (7/15) 
+   Generating static pages (11/15) 
+ ✓ Generating static pages (15/15)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    2.33 kB         286 kB
+├ ○ /_not-found                          1.15 kB         244 kB
+├ ○ /account                             1.71 kB         249 kB
+├ ○ /account/privacy                     2.15 kB         249 kB
+├ ƒ /api/dsar                              319 B         243 kB
+├ ƒ /api/health                            319 B         243 kB
+├ ƒ /api/waitlist                          320 B         243 kB
+├ ○ /cookies                               352 B         245 kB
+├ ○ /login                               1.64 kB         249 kB
+├ ○ /pricing                             1.47 kB         285 kB
+├ ○ /privacy                               351 B         245 kB
+├ ○ /signup                              1.82 kB         249 kB
+├ ○ /terms                                 319 B         243 kB
+└ ○ /waitlist                            1.14 kB         245 kB
++ First Load JS shared by all             242 kB
+  ├ chunks/338f75d0-99d9a5b0ec80eabe.js  54.4 kB
+  ├ chunks/392-f7eed7830891bcf8.js        171 kB
+  ├ chunks/3f8177d5-18577218767e3da8.js    12 kB
+  └ other shared chunks (total)          5.39 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+EXIT=0
+
+## mobile bundle (ios)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Regular.ttf (68KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\FontAwesome6_Solid.ttf (424KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Fontisto.ttf (314KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Foundation.ttf (57KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Ionicons.ttf (390KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\MaterialCommunityIcons.ttf (1.3MB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\MaterialIcons.ttf (357KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Octicons.ttf (69KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\SimpleLineIcons.ttf (54KB)
+..\..\node_modules\.pnpm\@expo+vector-icons@15.1.1_e_e50d0ba329acc381cebe0d9bdc2fc20f\node_modules\@expo\vector-icons\build\vendor\react-native-vector-icons\Fonts\Zocial.ttf (26KB)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\back-icon-mask.png (653B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\back-icon.png (4 variations | 566B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\clear-icon.png (4 variations | 425B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\close-icon.png (4 variations | 235B)
+..\..\node_modules\.pnpm\@react-navigation+elements@_ee873a41a9c85fd2d83bd32c55fa4e68\node_modules\@react-navigation\elements\lib\module\assets\search-icon.png (3 variations | 582B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\arrow_down.png (9.5KB)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\error.png (469B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\file.png (138B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\forward.png (188B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\pkg.png (364B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\sitemap.png (465B)
+..\..\node_modules\.pnpm\expo-router@55.0.13_@expo+l_4eac3183ac9cbff7ddfe87b2124c1083\node_modules\expo-router\assets\unmatched.png (4.8KB)
+
+› ios bundles (1):
+_expo/static/js/ios/index-030751f76048cc2b2609939797308cdd.hbc (6.1MB)
+
+› Files (1):
+metadata.json (2.8KB)
+
+Exported: C:/Users/haric/AppData/Local/Temp/sovio-bundle-check
+EXIT=0
