@@ -629,7 +629,7 @@ Raw outputs captured at `docs/superpowers/plans/baseline/phase5-task51-outdated-
 
 - Before: `^10.2.4` (major 10)
 - After: `^18.8.1` (major 18)
-- Delta: +8 majors. Dev-only tool; zero runtime impact on mobile bundle. eas-cli internally bundles its own TypeScript 6 + modern tooling, isolated under `.pnpm/` — does not affect workspace-declared TypeScript 5.9.3.
+- Delta: +8 majors. Dev-only tool; zero runtime impact on mobile bundle. **Correction from initial write-up**: eas-cli@18.8.1 does NOT ship its own bundled TS — per `pnpm-lock.yaml` line 11138, it resolved its `typescript` peer against the mobile workspace's `typescript@5.9.3`. No new TS 6 copy was introduced by the bump. The two TS versions in the lock (root `typescript@6.0.3` at line 6311, mobile `typescript@5.9.3` at line 6306) predate this task. Workspace tsc instances remain clean: root uses 6.0.3, mobile uses 5.9.3, eas-cli runs with mobile's 5.9.3 as its peer — no shadowing.
 
 ### Step 3 — `expo-atlas` bump
 
@@ -655,6 +655,14 @@ All five gates green at `HEAD=07c12ba` + working-tree deltas (eas-cli bump only)
 - **eas-cli 10 → 18 is 8 majors of drift:** Team should schedule a CI job to keep eas-cli within 1–2 majors going forward so future SDK migrations don't absorb this kind of tooling-debt jump in-band.
 - **Next.js 16 + TypeScript 6 are both waiting in the wings:** Separate tracked follow-ups, not scoped here.
 - **`@tanstack/react-query` 5.99 → 5.100:** Trivial minor, no known breaking changes; owner can pick up in next sprint.
+- **`@sentry/node@7.77.0` transitive via eas-cli:** eas-cli@18.8.1 carries `@sentry/node@7.77.0` as a dev transitive (`pnpm-lock.yaml` line 11165). Distinct from app's `@sentry/node@10.49.0` (pulled by `@sentry/nextjs`) and `@sentry/react-native@8.9.1` (root-override pinned). No runtime effect — `@sentry/node` only runs inside the eas-cli CLI process, never in the app bundle. Flagging so future contributors don't confuse it with the app's Sentry versions when dedupe-auditing.
+
+### Post-review fixes (follow-up commit)
+
+Applied in the next commit after parallel reviews surfaced:
+- **`apps/mobile/eas.json` `cli.version` tightened from `">= 10.0.0"` → `">= 18.0.0"`** (code review MED-1). The field's purpose is to communicate minimum supported CLI version to CI and other developers; `>= 10` would silently accept v10–v17 runs against a codebase tested with v18, creating divergence risk across eas-cli's breaking majors (v11 removed deprecated update flags, v13 changed config resolution). Tightened to match the tested local install.
+- **TS-isolation claim in Step 2 corrected** (code review MED-2) — see Step 2 note above.
+- **5-gate receipts re-captured at the follow-up HEAD** (spec review MED-1) so the receipt header SHA matches the commit actually being validated.
 
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
