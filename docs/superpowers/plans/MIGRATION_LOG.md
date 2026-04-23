@@ -664,6 +664,49 @@ Applied in the next commit after parallel reviews surfaced:
 - **TS-isolation claim in Step 2 corrected** (code review MED-2) — see Step 2 note above.
 - **5-gate receipts re-captured at the follow-up HEAD** (spec review MED-1) so the receipt header SHA matches the commit actually being validated.
 
+## Phase 6 Task 6.1 — RN stub removal attempt (KEEP alias)
+
+**Date**: 2026-04-23
+**Pre-attempt SHA**: 8256ed3 (Phase 5 completion tick)
+**Executed by**: Claude Opus 4.7 (automated)
+
+Per plan lines 585–599: attempt removing the `'react-native$'` webpack alias from `apps/web/next.config.js`; keep removal if web build stays green, otherwise restore.
+
+### Experiment
+
+Removed the single `'react-native$': path.resolve(__dirname, 'stubs/react-native-stub.js')` alias line. All other aliases (`expo-secure-store`, `expo-auth-session`, `expo-linking`, `expo-notifications`, `expo-device`, `expo-location`, `expo-modules-core$`, `expo$`) left untouched — the plan explicitly scopes Task 6.1 to the RN alias only.
+
+Ran `pnpm build`.
+
+### Result: FAILED — alias still required
+
+```
+Error:   x Expected 'from', got 'typeOf'
+  ,-[node_modules/.pnpm/react-native@0.83.6.../react-native/index.js:27:1]
+27 | import typeof * as ReactNativePublicAPI from './index.js.flow';
+   :        ^^^^^^
+```
+
+RN 0.83.6 continues to ship Flow syntax at its public API entry — specifically `import typeof * as`, which Next 15.5's SWC loader cannot parse. The import trace pins the responsible chain: `packages/core/src/services/auth.service.ts` → `react-native` (platform-gated auth, guarded by `Platform.OS === 'web'` at runtime but the import itself still resolves statically through `packages/core`'s barrel export to the web app).
+
+### Decision
+
+Restored the `'react-native$'` alias and embedded a Phase 6 comment in `next.config.js:14-18` documenting the attempt date, RN version tested, exact error, and the condition for future retry ("after RN ships a TS or Babel-parsed entry point"). The alias is load-bearing, not vestigial.
+
+### Post-restore verification
+
+Single gate re-run (the only one the stub affects):
+- `pnpm build` → EXIT=0 (14 routes, shared chunks 242 kB — identical to Phase 5 baseline)
+
+Other gates (typecheck/lint/test/bundle) unaffected by the next.config.js edit-and-revert — their inputs never changed in net terms.
+
+Artifact: `docs/superpowers/plans/baseline/phase6-task61-stub-removal-attempt.txt` (HEAD + ISO + EXIT trailer per Phase 2 Task 2.2 discipline).
+
+### Scope carry-forward
+
+- The `expo-*` stub aliases were not re-tested; plan scopes Task 6.1 to the RN alias only. A future housekeeping PR could probe each in isolation under current `expo-modules-core@3.0.29`. Tracked as low-priority cleanup, not in this migration.
+- Upstream RN entry-point de-Flow'ing: no ETA in the RN repo as of 2026-04. Track at https://github.com/facebook/react-native.
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
@@ -671,4 +714,14 @@ Applied in the next commit after parallel reviews surfaced:
 - [x] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Tasks 3.1 + 3.2 + 3.3 complete; commits 048c3f7 (handoff) and predecessors
 - [x] Phase 4 — Expo 55 — Task 4.1 complete (commit `2a636ac` + follow-up `1b74fc5` re-pinning Sentry v8; all five gates green; newArchEnabled=false retained; parallel reviews PASS/PASS-WITH-FINDINGS — both MED findings addressed in MIGRATION_LOG; no Task 4.2 call-site fixup needed — typecheck stayed green on SDK 55); device smoke deferred to gate per Phase 1/2/3 pattern
 - [x] Phase 5 — Companion ecosystem — Task 5.1 complete across three commits: `5fdfe3f` (eas-cli 10→18, expo-atlas unchanged, 3 majors deferred), `2b0b3e8` (review-fix: eas.json cli.version tightened to >=18, TS-isolation claim corrected, @sentry/node@7 transitive documented), `da29507` (follow-up verification receipt). Parallel reviews PASS-WITH-NOTES / PASS-WITH-FINDINGS — all 3 code findings + 1 spec finding addressed. Scope note: "TS reconciliation (mobile 5.9 → 6.0)" that my internal todo list mentioned is NOT part of the plan's Phase 5 — it is a deferred follow-up (see outdated audit: "typescript 5.9 → 6.0: **Defer** — breaking major, needs its own migration pass"). Phase 5 as plan-written covers only companion dev-tool bumps; both shipped.
-- [ ] Phase 6 — Web cleanup
+- [x] Phase 6 — Web cleanup — Task 6.1 complete. Attempted `react-native$` alias removal under RN 0.83.6; still fails at `react-native/index.js:27` (Flow `import typeof * as` syntax unparseable by Next 15 SWC). Restored alias with dated Phase 6 rationale comment in `next.config.js`. Web build EXIT=0 after restore; no other gates affected (net zero config.js change). Receipt at `docs/superpowers/plans/baseline/phase6-task61-stub-removal-attempt.txt`.
+
+## Migration complete
+
+Expo 51 → 55 migration ends at Phase 6 Task 6.1. 29 commits on `release/expo-55-migration` from baseline `9c4f48a` through HEAD. All five gates (typecheck, lint, test, web build, iOS bundle export) green at HEAD. Device smoke QA matrix deferred to pre-merge — see "Device smoke QA required" list in HANDOFF-2026-04-19.md § 3 item 4 and the individual phase-completion notes above.
+
+Carry-forward (not part of this migration):
+- TypeScript 6 mobile reconciliation (mobile stays on 5.9.3; root is 6.0.3) — own migration PR
+- Next.js 16 (currently 15.5.15) — own migration PR
+- Sentry Next.js config → `instrumentation.ts` (Next 15 deprecation warning in build output) — own cleanup PR
+- `expo-*` stub aliases in `next.config.js` (may also be removable under current `expo-modules-core@3.0.29`) — low-priority housekeeping

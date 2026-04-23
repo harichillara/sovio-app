@@ -1,0 +1,36 @@
+# Phase 6 Task 6.1 — RN stub removal attempt
+# HEAD=8256ed31c4cf3cb424a37f2a0b91e85cd074e005
+# TIMESTAMP=2026-04-23T22:36:01Z
+
+## Experiment
+Removed 'react-native$' webpack alias from apps/web/next.config.js.
+Ran: pnpm build
+
+## Result: FAILED — alias still required
+
+RN 0.83.6 still ships Flow syntax at its public API entry:
+  node_modules/.pnpm/react-native@0.83.6_.../react-native/index.js:27
+    import typeof * as ReactNativePublicAPI from './index.js.flow';
+
+Next 15.5 / SWC loader cannot parse Flow 'import typeof'. Import trace
+pins the chain: packages/core/src/services/auth.service.ts -> react-native.
+auth.service.ts loads react-native at module level for platform-gated auth
+(Platform.OS === 'web' branches are unreachable on web but the import itself
+still resolves through the packages/core barrel).
+
+## Decision
+Restore the 'react-native$' alias. Kept comment in next.config.js documenting
+the Phase 6 attempt + the RN 0.83.6 reason. Future removal attempts should
+only retry after RN ships a TS-or-Babel-parsed entry point (track upstream at
+react-native issue trackers — no ETA).
+
+## Post-restore verification
+
+### pnpm build
+  └ other shared chunks (total)          5.39 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+EXIT=0

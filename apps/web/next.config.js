@@ -12,6 +12,11 @@ const nextConfig = {
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
+      // Phase 6 Task 6.1 (2026-04-23): attempted removal under RN 0.83.6 + Next 15.5 —
+      // still fails with `Expected 'from', got 'typeOf'` at react-native/index.js:27
+      // (`import typeof * as ReactNativePublicAPI from './index.js.flow'`). RN 0.83.6
+      // continues to ship Flow at its public API entry point, which Next's SWC loader
+      // cannot parse. Alias kept until RN ships TS or Babel-parsed entry.
       'react-native$': path.resolve(__dirname, 'stubs/react-native-stub.js'),
       'expo-secure-store': path.resolve(__dirname, 'stubs/expo-stub.js'),
       'expo-auth-session': path.resolve(__dirname, 'stubs/expo-stub.js'),
