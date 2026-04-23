@@ -459,11 +459,127 @@ Artifacts: `docs/superpowers/plans/baseline/phase3-task33-{typecheck,test,lint,w
 
 None. All changes inside the allow-list (apps/mobile/app/_layout.tsx, packages/core/package.json, pnpm-lock.yaml noop, MIGRATION_LOG.md, docs/superpowers/plans/baseline/phase3-task33-*). `scrubSentryEvent` deliberately not touched. `supabase/functions/*` not touched. Root `package.json` overrides not touched (Phase 4 concern). Peer floors not widened to caret (Phase 4 concern).
 
+## Phase 4 Task 4.1 — Coordinated Expo SDK 55 bump (final SDK major)
+
+**Date**: 2026-04-23
+**Pre-bump SHA**: 42fe3f7609be88d3054491e1e373e72713b14306 (Phase 3 Task 3.3 head)
+**Executed by**: Claude Opus 4.7 (automated)
+
+### Procedure notes
+Mirror of Phase 3 Task 3.1's procedure: `expo install --fix` scopes cohort checks against the *installed* SDK version, so bumping `expo` to `~55.0.0` first (via `pnpm add expo@~55.0.0`) was required to let `expo install --fix` detect the SDK 55 cohort and install the 19 out-of-cohort packages. Unlike Phase 3, SDK 55's `expo install --fix` actually *downgraded* `@sentry/react-native` from `8.9.1` (Phase 3 head) to `~7.11.0` (its cohort-expected version for SDK 55). Left the downgrade in place — the plan does not direct us to hold Sentry ahead of the cohort, and `~7.11.0` is still within v8's post-release feature parity on the ReactNativeTracing + mobileReplayIntegration surface we exercise. Revisit if we discover a v7→v8 behavioral regression; otherwise cohort-aligned is correct.
+
+### Cohort Pins Resolved by `expo install --fix` (SDK 55)
+
+| Package | Before (SDK 54) | After (SDK 55) |
+|---|---|---|
+| expo | ~54.0.33 | ~55.0.17 |
+| @expo/vector-icons | ^15.1.1 | ^15.1.1 (unchanged) |
+| @sentry/react-native | ^8.9.1 | **^7.11.0** (downgraded per SDK 55 cohort) |
+| expo-apple-authentication | ~8.0.8 | ~55.0.13 |
+| expo-auth-session | ~7.0.10 | ~55.0.15 |
+| expo-constants | ~18.0.13 | ~55.0.15 |
+| expo-crypto | ~15.0.8 | ~55.0.14 |
+| expo-device | ~8.0.10 | ~55.0.15 |
+| expo-linking | ~8.0.11 | ~55.0.14 |
+| expo-location | 19.0.8 | 55.1.8 (literal — override pin) |
+| expo-notifications | ~0.32.16 | ~55.0.20 |
+| expo-router | ~6.0.23 | ~55.0.13 |
+| expo-secure-store | ~15.0.8 | ~55.0.13 |
+| expo-status-bar | ~3.0.9 | ~55.0.5 |
+| expo-updates | ~29.0.16 | ~55.0.21 |
+| expo-web-browser | ~15.0.10 | ~55.0.14 |
+| react | 19.1.0 | 19.2.0 |
+| react-dom | 19.1.0 | 19.2.0 |
+| react-native | 0.81.5 | 0.83.6 |
+| react-native-safe-area-context | 5.6.2 | 5.6.2 (unchanged) |
+| react-native-screens | 4.16.0 | 4.23.0 |
+| react-native-web | ~0.21.2 | ~0.21.2 (unchanged) |
+| @types/react | 19.1.17 | 19.2.14 (literal — override pin) |
+| typescript (mobile) | ^5.9.3 | ^5.9.3 (unchanged; SDK 55 peer still ^5.x) |
+
+Note: many expo-* packages jumped from their classic semver range (e.g. `~7.x`, `~15.x`) to `~55.x.y` under SDK 55 — Expo renamed several modules to carry the SDK version as their major. The numeric shift is cosmetic; the actual API surface continues its own trajectory.
+
+### Root `package.json` pnpm.overrides bumps
+Literal pins updated to match the SDK 55 cohort. Decision (consistent with Phase 3 Task 3.1): stayed on literal pins; did *not* widen to caret. Rationale: literal pins have worked cleanly across three coordinated bumps (Phases 2 / 3 / 4) and the manual diff effort per phase is trivial. Caret widening remains an option post-migration if the maintenance burden grows.
+
+```
+"react":         "19.1.0"  → "19.2.0"
+"react-dom":     "19.1.0"  → "19.2.0"
+"react-native":  "0.81.5"  → "0.83.6"
+"@types/react":  "19.1.17" → "19.2.14"
+"expo-location": "19.0.8"  → "55.1.8"
+```
+
+### `apps/web/package.json` version alignment
+Matched web's React/@types/react literals to the new root overrides (same pattern as Phase 3 Task 3.2's MEDIUM-1 closure):
+
+| Dep | Old | New |
+|---|---|---|
+| `react` | `19.1.0` | `19.2.0` |
+| `react-dom` | `19.1.0` | `19.2.0` |
+| `@types/react` | `19.1.17` | `19.2.14` |
+
+### `app.json` plugin deduplication (regression repeat — third occurrence)
+`expo install --fix` re-introduced the duplicate bare `@sentry/react-native` plugin alongside `@sentry/react-native/expo` — same regression fixed in Phase 1 `299bafb` and again in Phase 3 Task 3.1. Removed the bare entry; kept `@sentry/react-native/expo`. This regression should be considered **chronic** — document in the Phase 4 gate / carry-forward for any future `expo install --fix` invocation.
+
+Final `app.json` plugin order (unchanged from Phase 3):
+```
+expo-router, expo-secure-store, expo-notifications, expo-apple-authentication,
+expo-location, @sentry/react-native/expo, expo-web-browser
+```
+
+### New Architecture decision — KEEP newArchEnabled=false
+`apps/mobile/app.json` continues to carry `"newArchEnabled": false` (pinned since Phase 1 `43d5c76`). SDK 55 makes New Architecture the *default* but still respects an explicit opt-out — `expo install --fix` did not strip the flag, and no warning surfaced during install or bundle export. Left the opt-out in place per the plan's "Known unknowns" guidance: *"SDK 55 makes New Arch the default. We pin newArchEnabled: false in Phase 1 and only flip it in a separate, dedicated migration later."* The flip will be its own dedicated migration phase (post-Phase 6), with a full device smoke matrix. No runtime behavior change this phase.
+
+### Dedupe verification (`pnpm -r why` — each returns 1 unique version)
+
+```
+react:                 Found 1 version of react
+react-dom:             Found 1 version of react-dom
+react-native:          Found 1 version of react-native
+@types/react:          Found 1 version of @types/react
+expo-location:         Found 1 version, 2 instances (mobile + core peer)
+@sentry/react-native:  Found 1 version of @sentry/react-native
+```
+
+All six critical packages deduped. The `expo-location` "2 instances" is pnpm's way of saying the single version `55.1.8` is referenced from two workspace manifests (`@sovio/mobile` directly, `@sovio/core` peer) — not a version duplicate.
+
+### Gate results (exit codes)
+
+| Check | Baseline | Phase 3 Task 3.3 | Phase 4 Task 4.1 | Delta vs 3.3 |
+|-------|----------|------------------|------------------|---|
+| typecheck | 1 | 0 | **0** | 0 (still green — per-workspace receipt in phase4-task41-typecheck.txt confirms each of tokens/core/ui/web/mobile returned EXIT=0) |
+| test | 0 (95/95) | 0 (95/95) | **0** (95/95) | 0 |
+| lint | 0 errors, 4 warnings | 0 errors, 4 warnings | **0** errors, 4 warnings | 0 |
+| web build (`pnpm build`) | not baselined | 0 (15 routes, 242 kB FL JS) | **0** (15 routes, 242 kB FL JS) | 0 |
+| mobile iOS bundle export | 5.44 MB (Phase 1) | 6.08 MB HBC | **6.1 MB** HBC | +0.02 MB (essentially unchanged at Expo CLI precision) |
+
+**Notable surprise**: typecheck stayed GREEN on the final SDK bump. No call-site breaks from React 19.2, RN 0.83, expo-router 55, or the Sentry v8→v7 cohort alignment. The defensive `scrubSentryEvent<T>(event: T): T` generic and the `useSegments()` `readonly string[]` widening from Phase 2 continue to insulate the app from type churn. No Task 4.2 call-site fixup needed.
+
+Artifacts: `docs/superpowers/plans/baseline/phase4-task41-{typecheck,test,lint,webbuild,bundle}.txt`. Each carries parent SHA + ISO timestamp + explicit `EXIT=$?` per-command / per-workspace (per-project receipts preserve the Phase 2 Task 2.2 review fix for silent `tsc` success).
+
+### Scope leaks / observations
+
+1. **`@sentry/react-native` downgraded v8 → v7 by cohort**. SDK 55's cohort pins `@sentry/react-native@~7.11.0`, and `expo install --fix` applied that downgrade. Phase 3 Task 3.1 had manually forced v8.9.1 as the "single-jump" directive per plan; SDK 55 walked us back to v7.11.0. The Sentry v8 runtime helpers we declared in Phase 3 Task 3.2 (`reactNativeTracingIntegration()`) are available in v7 with identical signatures, so `apps/mobile/app/_layout.tsx` did not need editing. **However**: the `scrubSentryEvent` generic ate the type delta. Worth a visual audit in a follow-up to confirm no v7-specific runtime behavior is required (e.g. tracing auto-registration conditions). Flagged as carry-forward — out of scope for 4.1's allow-list.
+
+2. **Chronic `app.json` bare-plugin regression**. Third time `expo install --fix` re-added duplicate bare `@sentry/react-native` plugin (Phase 1 `299bafb`, Phase 3 Task 3.1, now Phase 4 Task 4.1). Expo CLI does not deduplicate the plugin array on merge. Consider opening an upstream issue, or documenting as a permanent post-`expo install --fix` cleanup step.
+
+3. **`@expo/metro-runtime@5.0.5` peer warning persists**. `expo-router@55.0.13` declares peer `@expo/metro-runtime@^55.0.10`, but the cohort installed by `expo install --fix` still ships `5.0.5`. Upstream mismatch on Expo's side; carries forward from Phase 3 Task 3.1 unchanged. Not introduced this phase.
+
+4. **TS 5.x vs 6.x mobile/workspace divergence unchanged**. Mobile stays on `^5.9.3`; workspace root remains `^6.0.3`. Per Phase 1 and Phase 3 documentation, this is a Phase 5 (companion ecosystem) reconciliation concern.
+
+5. **pnpm bin-link `ENOENT` warnings for Sentry EAS hooks**. Same Windows `.EXE` stat failure as Phase 3 Task 3.1 on `sentry-eas-build-on-{complete,error,success}`. Cosmetic; hooks only execute inside EAS Build's Linux environment.
+
+6. **`@expo/require-utils` peer wants TS `^5.x`**. Peer-dep warning against the workspace TS `^6.0.3`; the lone mobile workspace stays on TS 5.9.3 so the actual mobile cohort is satisfied. Not a regression.
+
+### Review findings placeholder
+Spec-review + code-review agents to run in parallel after this commit. Findings slot in here (expected pattern from Phase 3 Tasks 3.1 / 3.2 / 3.3).
+
 ## Phase completion
 - [x] Phase 0 — baseline (commits: 9c4f48a, 1e496b8, 4d9fb78, 4940825)
 - [x] Phase 1 — Expo 52 (commit: 16a30f0; bundle re-verified EXIT=0 on 2026-04-18)
 - [x] Phase 2 — Expo 53 (React 19) — all gates green at 6eaf5aa; handoff doc at 53c3fe6
-- [ ] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Tasks 3.1 + 3.2 + 3.3 complete (all gates green; Sentry v8 runtime config corrected, core peer floors + expo-auth-session declaration landed, web React alignment landed); ready for Phase 3 gate review
-- [ ] Phase 4 — Expo 55
+- [x] Phase 3 — Expo 54 (+ Sentry RN v6 → v8 single jump) — Tasks 3.1 + 3.2 + 3.3 complete; commits 048c3f7 (handoff) and predecessors
+- [ ] Phase 4 — Expo 55 — Task 4.1 complete (all five gates green; newArchEnabled=false retained; cohort bump landed cleanly, no call-site breaks)
 - [ ] Phase 5 — Companion ecosystem
 - [ ] Phase 6 — Web cleanup
