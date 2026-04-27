@@ -38,7 +38,7 @@
     "expo-updates": "~55.0.21",
     "expo-web-browser": "~55.0.14",
     "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "react-dom": "19.2.5",
     "react-native": "0.83.6",
     "react-native-safe-area-context": "5.6.2",
     "react-native-screens": "4.23.0",
