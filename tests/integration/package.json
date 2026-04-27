@@ -8,7 +8,7 @@
     "test:watch": "vitest --config ./vitest.integration.config.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.103.3"
+    "@supabase/supabase-js": "^2.105.0"
   },
   "devDependencies": {
     "dotenv": "^17.4.2",
