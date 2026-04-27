@@ -53,6 +53,6 @@
     "cross-env": "^10.1.0",
     "eas-cli": "^18.8.1",
     "expo-atlas": "^0.4.3",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }
