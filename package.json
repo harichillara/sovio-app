@@ -17,13 +17,13 @@
     "lint:fix": "eslint --fix packages/core/src packages/tokens/src packages/ui/src apps/mobile/app apps/mobile/components apps/web/app apps/web/components"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.58.2",
-    "@typescript-eslint/parser": "^8.58.2",
-    "@vitest/coverage-v8": "^4.1.4",
-    "eslint": "^10.2.1",
+    "@typescript-eslint/eslint-plugin": "^8.59.3",
+    "@typescript-eslint/parser": "^8.59.3",
+    "@vitest/coverage-v8": "^4.1.6",
+    "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.6"
   },
   "pnpm": {
     "overrides": {
